@@ -1,0 +1,1 @@
+@echo off & taskkill /f /im electron.exe /im node.exe /im vite.exe 2>nul & start "" cmd /c "npm run dev:react" & timeout /t 3 /nobreak >nul & start "" cmd /c "npm run dev:electron"

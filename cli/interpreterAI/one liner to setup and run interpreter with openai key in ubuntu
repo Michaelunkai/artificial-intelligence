@@ -1,0 +1,2 @@
+ curl -sL https://raw.githubusercontent.com/KillianLucas/open-interpreter/main/installers/oi-linux-installer.sh | bash && interpreter
+

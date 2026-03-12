@@ -1,0 +1,17 @@
+﻿Thumbs.db
+.DS_Store
+**/nul
+**/.git
+**/mem-agent-mcp/
+
+# Files >=100MB excluded by gitit (GitHub limit)
+cli/claudecode/wrappers/ClawdBot/B/ClawdBotManager.exe
+cli/claudecode/wrappers/ClawdBot/B/BULLETPROOF/ClawdBotManager.exe
+
+# Auto-excluded large files (>49MB)
+cli/claudecode/wrappers/ClawdBot/B/publish/ClawdBotManager.exe
+
+# Auto-excluded files with secrets
+MCP/claudecode/GLOBAL_RULE_MCP_ONDEMAND.txt
+MCP/claudecode/b.backup..ps1
+MCP/claudecode/b.backup.2025-12-02.ps1

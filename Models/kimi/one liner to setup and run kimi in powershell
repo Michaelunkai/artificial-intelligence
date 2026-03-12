@@ -1,0 +1,1 @@
+npm i @jacksontian/kimi-cli -g; setx KIMI_API_KEY 'sk-5VLZEviwFFOiF1aLja4O3FnTu1yQiSr9mJBEdE0nh9I7hUzy'; $env:KIMI_API_KEY = 'sk-5VLZEviwFFOiF1aLja4O3FnTu1yQiSr9mJBEdE0nh9I7hUzy'; kimi

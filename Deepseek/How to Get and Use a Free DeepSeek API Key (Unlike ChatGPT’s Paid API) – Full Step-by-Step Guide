@@ -1,0 +1,39 @@
+# **How to Get and Use a Free DeepSeek API Key (Unlike ChatGPT’s Paid API) – Full Step-by-Step Guide**  
+
+DeepSeek offers **free API access**, unlike ChatGPT, which requires a paid subscription for API usage. Here’s how to get and use your DeepSeek API key:  
+
+### **Step 1: Sign Up for a DeepSeek Account**  
+- Go to the **[DeepSeek official website](https://deepseek.com)**.  
+- Click on **"Sign Up"** and register using your email or social account.  
+
+### **Step 2: Navigate to the API Section**  
+- After logging in, go to the **API or Developer Dashboard** (look for "API Access" or "Developers" in the menu).  
+
+### **Step 3: Generate Your API Key**  
+- Click **"Create API Key"** or a similar option.  
+- You may need to verify your identity (via email or phone).  
+- Copy the generated **API key** securely (never share it publicly).  
+
+### **Step 4: Use the API in Your Projects**  
+- Check **DeepSeek’s API documentation** for endpoints (e.g., chat completions).  
+- Integrate the API key into your app (Python, JavaScript, etc.). Example in Python:  
+  ```python
+  import requests
+  response = requests.post(
+      "https://api.deepseek.com/v1/chat/completions",
+      headers={"Authorization": "Bearer YOUR_API_KEY"},
+      json={"model": "deepseek-chat", "messages": [{"role": "user", "content": "Hello!"}]}
+  )
+  print(response.json())
+  ```  
+
+### **Step 5: Check Usage Limits**  
+- DeepSeek’s free tier may have **rate limits** (requests/minute or monthly quotas).  
+- Monitor usage in your dashboard to avoid disruptions.  
+
+### **Final Notes**  
+✅ **Free to use** (unlike OpenAI’s paid API).  
+📄 **Always follow DeepSeek’s Terms of Service**.  
+🔄 **Check for updates**—policies may change over time.  
+
+Enjoy building with DeepSeek’s powerful AI for free! 🚀

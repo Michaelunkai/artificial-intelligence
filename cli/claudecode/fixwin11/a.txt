@@ -1,0 +1,309 @@
+You are performing a system audit and optimization of my Windows machine (C: and F: drives).
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  !!!!! CRITICAL FAILURE ALERT - SYSTEM HAS CRASHED TWICE FROM THIS !!!!!    ║
+║                                                                              ║
+║  THE LAST TWO TIMES OPTIMIZATIONS WERE RUN, MY MACHINE CRASHED ON REBOOT    ║
+║  DUE TO DRIVER ERRORS. THIS IS COMPLETELY UNACCEPTABLE.                     ║
+║                                                                              ║
+║  YOUR #1 MISSION: ENSURE ZERO CRASHES. NOT ONE. EVER. PERIOD.              ║
+║                                                                              ║
+║  IF THE SYSTEM CRASHES AGAIN, YOU HAVE FAILED COMPLETELY.                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+=== THE NEW RULE: DO NOT UPDATE ANY DRIVERS. NONE. ZERO. ===
+
+Since drivers have caused crashes TWICE, the new policy is simple:
+
+██████████████████████████████████████████████████████████████
+█  DO NOT UPDATE ANY DRIVERS WHATSOEVER. NOT A SINGLE ONE.  █
+██████████████████████████████████████████████████████████████
+
+- WiFi drivers: DO NOT UPDATE
+- GPU drivers: DO NOT UPDATE  
+- Audio drivers: DO NOT UPDATE
+- Chipset drivers: DO NOT UPDATE
+- Storage drivers: DO NOT UPDATE
+- USB drivers: DO NOT UPDATE
+- Bluetooth drivers: DO NOT UPDATE
+- Network drivers: DO NOT UPDATE
+- ANY driver: DO NOT UPDATE
+
+The ONLY exception: If a device is currently showing ERROR status in Device Manager AND is not functioning AND the user specifically asks you to fix that specific device. Even then - be extremely careful.
+
+'Newer version available' = DO NOT CARE, DO NOT UPDATE
+'Could improve performance' = DO NOT CARE, DO NOT UPDATE
+'Manufacturer released update' = DO NOT CARE, DO NOT UPDATE
+'Working fine' = LEAVE IT COMPLETELY ALONE
+
+=== WHAT YOU ARE ALLOWED TO DO (SAFE OPERATIONS ONLY) ===
+
+These operations are SAFE and will NOT cause crashes:
+
+1. DISK CLEANUP (100% safe):
+   - Delete temp files
+   - Clear browser caches
+   - Clear pip/npm caches
+   - Empty recycle bin
+   - Clear Windows Update cache
+   - Remove old Windows installations
+   - Docker prune unused images/containers/volumes
+
+2. SOFTWARE UPDATES VIA WINGET (safe - not drivers):
+   - winget upgrade --all (updates applications, not drivers)
+   
+3. DOCKER OPTIMIZATION (safe):
+   - wsl --shutdown
+   - Enable sparse VHD
+   - Compact VHDX files
+   - Optimize .wslconfig
+   - Prune unused resources
+   - Optimize daemon.json
+
+4. PYTHON/PIP (safe):
+   - pip install --upgrade pip
+   - pip cache purge
+   - Fix pip.ini configuration
+
+5. NODE/NPM (safe):
+   - npm cache clean --force
+   - npm install -g npm@latest
+
+6. WINGET (safe):
+   - winget source reset
+   - winget source update
+   - winget upgrade --all
+
+7. POWER SETTINGS (safe):
+   - Change power plan
+   - Disable sleep timers
+
+8. VISUAL EFFECTS (safe):
+   - Adjust for performance
+
+9. STARTUP PROGRAMS (safe):
+   - Disable unnecessary startup items (NOT services, just startup programs)
+
+10. WINDOWS MAINTENANCE (safe):
+    - DISM /Online /Cleanup-Image /RestoreHealth
+    - sfc /scannow
+    - Disk defrag/TRIM
+
+=== WHAT YOU ARE FORBIDDEN FROM DOING ===
+
+These operations have caused crashes and are BANNED:
+
+1. ❌ UPDATING ANY DRIVER - BANNED
+2. ❌ MODIFYING ANY DRIVER SETTINGS - BANNED
+3. ❌ DISABLING ANY SERVICE - BANNED (set to Manual at most, never Disabled)
+4. ❌ MODIFYING BOOT CONFIGURATION (bcdedit) - BANNED
+5. ❌ MODIFYING CRITICAL REGISTRY KEYS - BANNED
+6. ❌ DELETING ANYTHING IN C:\Windows\System32 - BANNED
+7. ❌ MODIFYING HKLM\SYSTEM\CurrentControlSet\Services - BANNED
+8. ❌ RUNNING 'DRIVER UPDATE' TOOLS - BANNED
+9. ❌ INSTALLING NEW DRIVERS - BANNED
+10. ❌ ROLLING BACK DRIVERS (unless actively fixing a current problem) - BANNED
+
+=== MANDATORY FIRST STEPS ===
+
+STEP 1: Create System Restore Point FIRST
+Checkpoint-Computer -Description 'Pre-Optimization-SafeMode' -RestorePointType MODIFY_SETTINGS
+
+STEP 2: Backup ALL Drivers (just in case, but we wont touch them)
+$driverBackup = 'C:\DriversBackup-' + (Get-Date -Format 'yyyyMMdd-HHmmss')
+New-Item -ItemType Directory -Path $driverBackup -Force | Out-Null
+Export-WindowsDriver -Online -Destination $driverBackup
+
+STEP 3: Document EXACT current system state (this is our baseline)
+$baseline = [ordered]@{
+    Timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    ComputerName = $env:COMPUTERNAME
+    WiFiAdapter = Get-NetAdapter | Where {$_.InterfaceDescription -match 'Wi-Fi|Wireless|WLAN'} | Select Name, InterfaceDescription, Status, DriverVersion, DriverDate
+    EthernetAdapter = Get-NetAdapter | Where {$_.InterfaceDescription -notmatch 'Wi-Fi|Wireless|WLAN|Virtual|Hyper-V|Bluetooth|VMware|VirtualBox'} | Select Name, InterfaceDescription, Status, DriverVersion
+    NetworkConnected = (Get-NetAdapter | Where Status -eq 'Up').Count
+    InternetWorks = Test-NetConnection google.com -InformationLevel Quiet -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+    AllDevicesOK = (Get-PnpDevice | Where Status -ne 'OK' | Measure).Count -eq 0
+    DeviceErrors = Get-PnpDevice | Where Status -ne 'OK' | Select FriendlyName, Status, Class
+    TotalDevicesOK = (Get-PnpDevice | Where Status -eq 'OK' | Measure).Count
+    GPU = Get-CimInstance Win32_VideoController | Select Name, DriverVersion, DriverDate, Status
+    RunningServicesCount = (Get-Service | Where Status -eq 'Running' | Measure).Count
+}
+$baseline | ConvertTo-Json -Depth 5 | Out-File 'C:\SystemBaseline.json' -Encoding UTF8
+
+STEP 4: Verify system is currently healthy
+$currentErrors = Get-PnpDevice | Where Status -ne 'OK'
+if ($currentErrors) {
+    Write-Host 'WARNING: System currently has device errors - fix these FIRST'
+    $currentErrors | Format-Table FriendlyName, Status, Class -AutoSize
+}
+
+STEP 5: Verify network works RIGHT NOW
+$netTest = Test-NetConnection google.com -InformationLevel Quiet -WarningAction SilentlyContinue
+if ($netTest) { Write-Host 'Network: WORKING' } else { Write-Host 'Network: ISSUE' }
+
+=== PHASE 1: DISCOVERY (NO CHANGES) ===
+
+Just observe and document - make NO changes:
+
+# Hardware Info
+Get-CimInstance Win32_Processor | Select Name, NumberOfCores
+Get-CimInstance Win32_VideoController | Select Name, DriverVersion, Status
+(Get-CimInstance Win32_PhysicalMemory | Measure Capacity -Sum).Sum / 1GB
+Get-CimInstance Win32_DiskDrive | Select Model, MediaType, Status
+
+# CRITICAL: Network Adapters - Document but DO NOT TOUCH
+Get-NetAdapter | Format-Table Name, InterfaceDescription, Status, LinkSpeed, DriverVersion, DriverDate -AutoSize
+
+# All Devices - Document but DO NOT TOUCH drivers
+Get-PnpDevice | Where Status -eq 'OK' | Group Class | Select Count, Name | Sort Count -Descending
+
+# Software
+winget list 2>$null | Select -First 50
+Get-Command python, pip, node, npm, docker -ErrorAction SilentlyContinue
+
+# Docker/WSL
+docker version 2>$null
+wsl --list --verbose 2>$null
+
+=== PHASE 2: SAFE FIXES ONLY ===
+
+Only perform operations from the SAFE list. Never touch drivers.
+
+DOCKER (safe operations):
+wsl --shutdown
+Start-Sleep 3
+wsl --manage docker-desktop-data --set-sparse true 2>$null
+wsl --manage docker-desktop --set-sparse true 2>$null
+docker system prune -af --volumes 2>$null
+docker builder prune -af 2>$null
+
+PYTHON (safe):
+python -m pip install --upgrade pip 2>$null
+pip cache purge 2>$null
+
+NODE (safe):
+npm cache clean --force 2>$null
+npm install -g npm@latest 2>$null
+
+WINGET (safe):
+winget source update
+winget upgrade --all --accept-package-agreements --accept-source-agreements --silent
+
+DISK CLEANUP (safe):
+Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item 'C:\Windows\Temp\*' -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item 'C:\Windows\SoftwareDistribution\Download\*' -Recurse -Force -ErrorAction SilentlyContinue
+Clear-RecycleBin -Force -ErrorAction SilentlyContinue
+
+=== PHASE 3: RUN STEEP ===
+
+steep
+- Must complete in under 10 minutes
+- Zero errors, zero warnings
+- If any issue, fix and re-run
+
+=== PHASE 4: OBSESSIVE PRE-REBOOT VERIFICATION ===
+
+This is the most critical phase. You must be OBSESSIVELY thorough.
+
+Run ALL 15 checks:
+
+CHECK 1: Device Manager - ZERO errors allowed
+$deviceErrors = Get-PnpDevice | Where-Object {$_.Status -eq 'Error' -or $_.Status -eq 'Degraded' -or $_.Status -eq 'Unknown'}
+if ($deviceErrors) { FAIL - DO NOT REBOOT }
+
+CHECK 2: WiFi Adapter exists and is OK
+$wifiAdapter = Get-NetAdapter | Where {$_.InterfaceDescription -match 'Wi-Fi|Wireless|WLAN|802\.11'}
+$wifiDevice = Get-PnpDevice | Where {$_.FriendlyName -match 'Wi-Fi|Wireless|WLAN' -and $_.Class -eq 'Net'}
+if ($wifiDevice.Status -ne 'OK') { FAIL - DO NOT REBOOT }
+
+CHECK 3: WiFi is connected (if adapter exists)
+$wifiConnected = Get-NetAdapter | Where {$_.InterfaceDescription -match 'Wi-Fi|Wireless|WLAN' -and $_.Status -eq 'Up'}
+
+CHECK 4: Ethernet Adapter (if exists)
+$ethAdapter = Get-NetAdapter | Where {$_.InterfaceDescription -notmatch 'Wi-Fi|Wireless|WLAN|Virtual|Hyper-V|VMware|VirtualBox|Bluetooth|WAN'}
+
+CHECK 5: Internet Connectivity
+$internetTest = Test-NetConnection google.com -InformationLevel Quiet -WarningAction SilentlyContinue
+if (-not $internetTest) { FAIL - DO NOT REBOOT }
+
+CHECK 6: GPU Status
+$gpu = Get-CimInstance Win32_VideoController | Where {$_.Name -notmatch 'Microsoft Basic'}
+$gpuDevice = Get-PnpDevice | Where {$_.Class -eq 'Display' -and $_.FriendlyName -notmatch 'Microsoft Basic'}
+if ($gpuDevice.Status -ne 'OK') { FAIL - DO NOT REBOOT }
+
+CHECK 7: Audio Device Status
+$audioDevices = Get-PnpDevice | Where {$_.Class -eq 'AudioEndpoint' -or $_.Class -eq 'MEDIA'} | Where Status -ne 'OK'
+
+CHECK 8: Storage Controller Status - CRITICAL
+$storageControllers = Get-PnpDevice | Where {$_.Class -eq 'SCSIAdapter' -or $_.Class -eq 'HDC'}
+$storageErrors = $storageControllers | Where Status -ne 'OK'
+if ($storageErrors) { CRITICAL FAIL - WILL NOT BOOT }
+
+CHECK 9: Critical Services
+$criticalServices = @('PlugPlay','DcomLaunch','RpcSs','RpcEptMapper','Winmgmt','Power','Dhcp','Dnscache','nsi','WlanSvc')
+foreach ($svc in $criticalServices) {
+    $service = Get-Service -Name $svc -ErrorAction SilentlyContinue
+    if ($service.StartType -eq 'Disabled') { FAIL - service disabled will cause boot issues }
+}
+
+CHECK 10: Driver Backup Exists
+Test-Path 'C:\DriversBackup*'
+
+CHECK 11: System Restore Point Exists
+Get-ComputerRestorePoint -ErrorAction SilentlyContinue | Select -First 1
+
+CHECK 12: Disk Health
+$disks = Get-PhysicalDisk -ErrorAction SilentlyContinue
+$unhealthyDisks = $disks | Where HealthStatus -ne 'Healthy'
+
+CHECK 13: Compare to Baseline
+$baseline = Get-Content 'C:\SystemBaseline.json' | ConvertFrom-Json
+$currentOKDevices = (Get-PnpDevice | Where Status -eq 'OK' | Measure).Count
+if ($currentOKDevices -lt $baseline.TotalDevicesOK) { FAIL - fewer working devices }
+
+CHECK 14: No Pending Dangerous Operations
+$pendingFileRename = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name PendingFileRenameOperations -ErrorAction SilentlyContinue).PendingFileRenameOperations
+
+CHECK 15: Final Device Error Count
+$finalErrorCount = (Get-PnpDevice | Where {$_.Status -eq 'Error'} | Measure).Count
+$finalDegradedCount = (Get-PnpDevice | Where {$_.Status -eq 'Degraded'} | Measure).Count
+if ($finalErrorCount -gt 0 -or $finalDegradedCount -gt 0) { FAIL - device issues exist }
+
+=== FINAL VERDICT ===
+
+ALL 15 CHECKS MUST PASS before declaring safe to reboot.
+
+If ANY check fails:
+- DO NOT proceed
+- DO NOT sound the alert
+- FIX the issue first
+- Re-run verification
+
+=== THE FINAL STEP - ONLY IF ALL CHECKS PASS ===
+
+You are FORBIDDEN from running the alert beep unless:
+1. steep completed perfectly (under 10 min, zero errors)
+2. ALL 15 verification checks passed
+3. The final verdict shows 'SAFE TO REBOOT'
+4. You have visually confirmed no device errors
+5. You have confirmed network is working
+6. You are 1,000,000% certain the system will not crash
+
+When and ONLY when everything is perfect, run the alert:
+
+3..1 | ForEach-Object { [console]::beep(800,500); Start-Sleep -Milliseconds 200 }
+
+This beep means: ALL DONE, EVERYTHING PERFECT, 100% SAFE TO REBOOT.
+
+=== REMEMBER ===
+
+My system has crashed TWICE from driver issues after optimization. Your job is to:
+1. NOT touch any drivers at all
+2. Only perform safe operations (disk cleanup, software updates, Docker optimization)
+3. Run obsessive verification before declaring done
+4. GUARANTEE the system will reboot without any crash
+
+If the system crashes again, you have failed. Make sure that does not happen.
+
+NOW BEGIN. Safety first. No driver changes. Obsessive verification. Guarantee a clean reboot.
