@@ -1,0 +1,1 @@
+in my todoist , under documentention(job) tab, in task "sum <today's date> add starting with * full explanation of everey single thing we did this session and for what ! achieve it without removing any data from the task if it have any... if it already have *<> in body, just create new line under it to achieve it !

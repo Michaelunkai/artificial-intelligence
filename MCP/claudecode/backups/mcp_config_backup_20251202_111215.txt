@@ -1,0 +1,26 @@
+Checking MCP server health...
+
+filesystem: cmd /c npx -y @modelcontextprotocol/server-filesystem C:/ F:/ - Γ£ô Connected
+github: cmd /c npx -y @modelcontextprotocol/server-github - Γ£ô Connected
+puppeteer: cmd /c npx -y @modelcontextprotocol/server-puppeteer - Γ£ô Connected
+playwright: cmd /c npx -y @playwright/mcp - Γ£ô Connected
+memory: cmd /c npx -y @modelcontextprotocol/server-memory - Γ£ô Connected
+sequential-thinking: cmd /c npx -y @modelcontextprotocol/server-sequential-thinking - Γ£ô Connected
+everything: cmd /c npx -y everything-mcp - Γ£ô Connected
+deepwiki: cmd /c npx -y deepwiki-mcp - Γ£ô Connected
+postgres: cmd /c npx -y @modelcontextprotocol/server-postgres postgresql://raz%40tovtech.org:CaptainForgotCreatureBreak@45.148.28.196:5432/TovPlay - Γ£ô Connected
+figma: cmd /c npx -y figma-mcp - Γ£ô Connected
+smart-crawler: cmd /c npx -y mcp-smart-crawler - Γ£ô Connected
+mongodb: cmd /c npx -y mongodb-mcp-server - Γ£ô Connected
+docker: cmd /c npx -y mcp-server-docker - Γ£ô Connected
+youtube: cmd /c npx -y @sinco-lab/mcp-youtube-transcript - Γ£ô Connected
+read-website-fast: cmd /c npx -y @just-every/mcp-read-website-fast - Γ£ô Connected
+mcp-installer: cmd /c npx -y @anaisbetts/mcp-installer - Γ£ô Connected
+graphql: cmd /c npx -y mcp-graphql - Γ£ô Connected
+context7: cmd /c npx -y @upstash/context7-mcp --api-key ctx7sk-c777d86e-785c-4d34-a350-71fb59250be7 - Γ£ô Connected
+exa: cmd /c npx -y exa-mcp-server - Γ£ô Connected
+knowledge-graph: cmd /c npx -y mcp-knowledge-graph - Γ£ô Connected
+deep-research: cmd /c npx -y mcp-deep-research - Γ£ô Connected
+firecrawl: cmd /c npx -y firecrawl-mcp - Γ£ô Connected
+windows-mcp: npx -y @darbotlabs/darbot-windows-mcp - Γ£ô Connected
+mcp-pyautogui: uvx mcp-pyautogui-server - Γ£ô Connected

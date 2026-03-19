@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  agentflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentflow
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist database
+      - ./data:/app/data
+      # Mount logs (optional)
+      - ./logs:/app/logs
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/agentflow"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - agentflow-network
+
+  # Optional: Add Prometheus for monitoring
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: agentflow-prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus-data:/prometheus
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #     - '--storage.tsdb.path=/prometheus'
+  #   networks:
+  #     - agentflow-network
+
+  # Optional: Add Grafana for dashboards
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: agentflow-grafana
+  #   ports:
+  #     - "3001:3000"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+  #   networks:
+  #     - agentflow-network
+
+networks:
+  agentflow-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

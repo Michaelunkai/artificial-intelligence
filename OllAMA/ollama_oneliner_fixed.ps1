@@ -1,0 +1,2 @@
+# Fixed one-liner version of the original command
+winget install Ollama.Ollama --force --override "/S /D=C:\ollama"; Start-Sleep -Seconds 2; Stop-Process -Name "ollama*" -Force -ErrorAction SilentlyContinue; [System.Environment]::SetEnvironmentVariable("OLLAMA_MODELS", "C:\ollama\models", "Machine"); [System.Environment]::SetEnvironmentVariable("OLLAMA_HOME", "C:\ollama", "Machine"); $env:OLLAMA_MODELS="C:\ollama\models"; $env:OLLAMA_HOME="C:\ollama"

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentFlow - Scheduled Tasks</title>
+  <link rel="stylesheet" href="/agentflow/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1>⏰ Scheduled Tasks</h1>
+        <p class="subtitle">Automated recurring task management</p>
+      </div>
+      <div class="header-right">
+        <button class="btn btn-primary" onclick="showNewScheduleModal()">➕ New Schedule</button>
+        <a href="/agentflow" class="btn btn-secondary">← Dashboard</a>
+      </div>
+    </header>
+
+    <!-- Upcoming Tasks -->
+    <section class="section">
+      <h2>📅 Upcoming</h2>
+      <div class="upcoming-list" id="upcomingList">
+        <div class="empty-state">Loading...</div>
+      </div>
+    </section>
+
+    <!-- All Scheduled Tasks -->
+    <section class="section">
+      <div class="section-header">
+        <h2>📋 All Scheduled Tasks</h2>
+        <div class="filter-buttons">
+          <button class="btn btn-sm active" onclick="filterScheduled('all')">All</button>
+          <button class="btn btn-sm" onclick="filterScheduled('enabled')">Enabled</button>
+          <button class="btn btn-sm" onclick="filterScheduled('disabled')">Disabled</button>
+        </div>
+      </div>
+      <div class="scheduled-list" id="scheduledList">
+        <div class="empty-state">Loading...</div>
+      </div>
+    </section>
+
+    <!-- Schedule Format Help -->
+    <section class="section">
+      <h2>📖 Schedule Formats</h2>
+      <div class="format-help">
+        <div class="format-item">
+          <code>every 6h</code>
+          <span>Run every 6 hours</span>
+        </div>
+        <div class="format-item">
+          <code>every 30m</code>
+          <span>Run every 30 minutes</span>
+        </div>
+        <div class="format-item">
+          <code>every 1d</code>
+          <span>Run every day</span>
+        </div>
+        <div class="format-item">
+          <code>daily at 9:00</code>
+          <span>Run every day at 9:00 AM</span>
+        </div>
+        <div class="format-item">
+          <code>daily at 14:30</code>
+          <span>Run every day at 2:30 PM</span>
+        </div>
+        <div class="format-item">
+          <code>0 9 * * *</code>
+          <span>Cron: Run at 9:00 AM every day</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- New Schedule Modal -->
+  <div id="newScheduleModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Create Scheduled Task</h3>
+        <button class="close-btn" onclick="closeNewScheduleModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <label for="scheduleDescription">Task Description</label>
+        <textarea id="scheduleDescription" placeholder="What should the bot do?" rows="3"></textarea>
+
+        <label for="scheduleFormat">Schedule</label>
+        <select id="scheduleFormat" onchange="updateScheduleInput()">
+          <option value="interval">Interval (every X hours)</option>
+          <option value="daily">Daily at specific time</option>
+          <option value="cron">Custom (cron format)</option>
+        </select>
+
+        <div id="scheduleInputContainer">
+          <label for="scheduleInterval">Interval</label>
+          <div class="input-group">
+            <input type="number" id="scheduleInterval" value="6" min="1" max="720">
+            <select id="scheduleUnit">
+              <option value="m">minutes</option>
+              <option value="h" selected>hours</option>
+              <option value="d">days</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="scheduleDailyContainer" style="display: none;">
+          <label for="scheduleTime">Time</label>
+          <input type="time" id="scheduleTime" value="09:00">
+        </div>
+
+        <div id="scheduleCronContainer" style="display: none;">
+          <label for="scheduleCron">Cron Expression</label>
+          <input type="text" id="scheduleCron" placeholder="0 9 * * *">
+        </div>
+
+        <label for="scheduleBot">Assign to Bot (optional)</label>
+        <select id="scheduleBot">
+          <option value="">Auto-assign</option>
+          <option value="session2">session2</option>
+          <option value="openclaw">openclaw</option>
+          <option value="openclaw4">openclaw4</option>
+          <option value="main">main</option>
+        </select>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeNewScheduleModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="createSchedule()">Create Schedule</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <style>
+    .upcoming-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .upcoming-item {
+      background: var(--bg-tertiary);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 4px solid var(--primary);
+    }
+
+    .upcoming-info {
+      flex: 1;
+    }
+
+    .upcoming-desc {
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .upcoming-meta {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .upcoming-time {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-align: right;
+    }
+
+    .upcoming-time small {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: normal;
+      color: var(--text-secondary);
+    }
+
+    .scheduled-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .scheduled-item {
+      background: var(--bg-tertiary);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .scheduled-item.disabled {
+      opacity: 0.5;
+    }
+
+    .scheduled-info {
+      flex: 1;
+    }
+
+    .scheduled-desc {
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .scheduled-meta {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .scheduled-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .scheduled-actions button {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+    }
+
+    .format-help {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .format-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem;
+      background: var(--bg-tertiary);
+      border-radius: 0.5rem;
+    }
+
+    .format-item code {
+      background: var(--bg-secondary);
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-family: monospace;
+      color: var(--primary);
+    }
+
+    .format-item span {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .input-group input {
+      flex: 1;
+    }
+
+    .input-group select {
+      width: auto;
+    }
+  </style>
+
+  <script>
+    let currentFilter = 'all';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadUpcoming();
+      loadScheduled();
+    });
+
+    async function loadUpcoming() {
+      try {
+        const response = await fetch('/agentflow/api/scheduled/upcoming?limit=5');
+        const data = await response.json();
+        
+        const container = document.getElementById('upcomingList');
+        
+        if (!data.success || data.tasks.length === 0) {
+          container.innerHTML = '<div class="empty-state">No upcoming scheduled tasks</div>';
+          return;
+        }
+
+        container.innerHTML = data.tasks.map(task => `
+          <div class="upcoming-item">
+            <div class="upcoming-info">
+              <div class="upcoming-desc">${escapeHtml(task.description)}</div>
+              <div class="upcoming-meta">
+                Schedule: ${task.schedule} • Bot: ${task.bot_id || 'Auto'} • 
+                Run #${task.run_count + 1}
+              </div>
+            </div>
+            <div class="upcoming-time">
+              ${task.time_until}
+              <small>${new Date(task.next_run).toLocaleTimeString()}</small>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Failed to load upcoming:', error);
+      }
+    }
+
+    async function loadScheduled() {
+      try {
+        let url = '/agentflow/api/scheduled';
+        if (currentFilter === 'enabled') url += '?enabled=true';
+        else if (currentFilter === 'disabled') url += '?enabled=false';
+
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        const container = document.getElementById('scheduledList');
+        
+        if (!data.success || data.tasks.length === 0) {
+          container.innerHTML = '<div class="empty-state">No scheduled tasks found</div>';
+          return;
+        }
+
+        container.innerHTML = data.tasks.map(task => `
+          <div class="scheduled-item ${task.enabled ? '' : 'disabled'}" data-id="${task.id}">
+            <div class="scheduled-info">
+              <div class="scheduled-desc">${escapeHtml(task.description)}</div>
+              <div class="scheduled-meta">
+                Schedule: <strong>${task.schedule}</strong> • 
+                Bot: ${task.bot_id || 'Auto'} • 
+                Runs: ${task.run_count} • 
+                Next: ${task.next_run_human || 'N/A'} •
+                ${task.enabled ? '✅ Enabled' : '⏸️ Paused'}
+              </div>
+            </div>
+            <div class="scheduled-actions">
+              <button class="btn btn-sm" onclick="runNow('${task.id}')" title="Run Now">▶️</button>
+              ${task.enabled 
+                ? `<button class="btn btn-sm" onclick="pauseTask('${task.id}')" title="Pause">⏸️</button>`
+                : `<button class="btn btn-sm" onclick="resumeTask('${task.id}')" title="Resume">▶️</button>`
+              }
+              <button class="btn btn-sm" onclick="deleteScheduled('${task.id}')" title="Delete">🗑️</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Failed to load scheduled:', error);
+      }
+    }
+
+    function filterScheduled(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-buttons .btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase().includes(filter) || 
+          (filter === 'all' && btn.textContent === 'All'));
+      });
+      loadScheduled();
+    }
+
+    function showNewScheduleModal() {
+      document.getElementById('newScheduleModal').classList.add('active');
+      document.getElementById('scheduleDescription').focus();
+    }
+
+    function closeNewScheduleModal() {
+      document.getElementById('newScheduleModal').classList.remove('active');
+      // Reset form
+      document.getElementById('scheduleDescription').value = '';
+      document.getElementById('scheduleFormat').value = 'interval';
+      document.getElementById('scheduleInterval').value = '6';
+      document.getElementById('scheduleBot').value = '';
+      updateScheduleInput();
+    }
+
+    function updateScheduleInput() {
+      const format = document.getElementById('scheduleFormat').value;
+      document.getElementById('scheduleInputContainer').style.display = format === 'interval' ? 'block' : 'none';
+      document.getElementById('scheduleDailyContainer').style.display = format === 'daily' ? 'block' : 'none';
+      document.getElementById('scheduleCronContainer').style.display = format === 'cron' ? 'block' : 'none';
+    }
+
+    async function createSchedule() {
+      const description = document.getElementById('scheduleDescription').value.trim();
+      if (!description) {
+        showToast('Please enter a task description', 'error');
+        return;
+      }
+
+      const format = document.getElementById('scheduleFormat').value;
+      let schedule;
+
+      if (format === 'interval') {
+        const value = document.getElementById('scheduleInterval').value;
+        const unit = document.getElementById('scheduleUnit').value;
+        schedule = `every ${value}${unit}`;
+      } else if (format === 'daily') {
+        const time = document.getElementById('scheduleTime').value;
+        schedule = `daily at ${time}`;
+      } else {
+        schedule = document.getElementById('scheduleCron').value.trim();
+      }
+
+      const bot_id = document.getElementById('scheduleBot').value || undefined;
+
+      try {
+        const response = await fetch('/agentflow/api/scheduled', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description, schedule, bot_id })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) throw new Error(data.error);
+
+        showToast('Scheduled task created!', 'success');
+        closeNewScheduleModal();
+        loadUpcoming();
+        loadScheduled();
+      } catch (error) {
+        showToast('Failed to create: ' + error.message, 'error');
+      }
+    }
+
+    async function runNow(id) {
+      try {
+        const response = await fetch(`/agentflow/api/scheduled/${id}/run`, { method: 'POST' });
+        const data = await response.json();
+        
+        if (!data.success) throw new Error(data.error);
+        
+        showToast('Task triggered!', 'success');
+        loadUpcoming();
+        loadScheduled();
+      } catch (error) {
+        showToast('Failed: ' + error.message, 'error');
+      }
+    }
+
+    async function pauseTask(id) {
+      try {
+        const response = await fetch(`/agentflow/api/scheduled/${id}/pause`, { method: 'POST' });
+        const data = await response.json();
+        
+        if (!data.success) throw new Error(data.error);
+        
+        showToast('Task paused', 'info');
+        loadUpcoming();
+        loadScheduled();
+      } catch (error) {
+        showToast('Failed: ' + error.message, 'error');
+      }
+    }
+
+    async function resumeTask(id) {
+      try {
+        const response = await fetch(`/agentflow/api/scheduled/${id}/resume`, { method: 'POST' });
+        const data = await response.json();
+        
+        if (!data.success) throw new Error(data.error);
+        
+        showToast('Task resumed', 'success');
+        loadUpcoming();
+        loadScheduled();
+      } catch (error) {
+        showToast('Failed: ' + error.message, 'error');
+      }
+    }
+
+    async function deleteScheduled(id) {
+      if (!confirm('Delete this scheduled task?')) return;
+
+      try {
+        const response = await fetch(`/agentflow/api/scheduled/${id}`, { method: 'DELETE' });
+        const data = await response.json();
+        
+        if (!data.success) throw new Error(data.error);
+        
+        showToast('Task deleted', 'info');
+        loadUpcoming();
+        loadScheduled();
+      } catch (error) {
+        showToast('Failed: ' + error.message, 'error');
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
