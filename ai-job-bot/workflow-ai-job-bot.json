@@ -1,0 +1,528 @@
+{
+  "name": "AI Job Application Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "jobKeywords",
+              "value": "={{ $env.JOB_KEYWORDS }}"
+            },
+            {
+              "name": "jobLocation",
+              "value": "={{ $env.JOB_LOCATION }}"
+            },
+            {
+              "name": "maxJobs",
+              "value": "={{ $env.MAX_JOBS_PER_RUN }}"
+            },
+            {
+              "name": "minRelevanceScore",
+              "value": "={{ $env.MIN_RELEVANCE_SCORE }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-parameters",
+      "name": "Part 1-2: Set Job Search Parameters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "actorId": "apify/linkedin-jobs-scraper",
+        "waitForFinish": true,
+        "input": {
+          "positions": "={{ $node['Part 1-2: Set Job Search Parameters'].json['jobKeywords'] }}",
+          "location": "={{ $node['Part 1-2: Set Job Search Parameters'].json['jobLocation'] }}",
+          "maxItems": "={{ $node['Part 1-2: Set Job Search Parameters'].json['maxJobs'] }}",
+          "remote": true
+        }
+      },
+      "id": "apify-scraper",
+      "name": "Part 3: Scrape LinkedIn Jobs (Apify)",
+      "type": "n8n-nodes-base.apify",
+      "typeVersion": 1,
+      "position": [750, 300],
+      "credentials": {
+        "apifyApi": {
+          "id": "1",
+          "name": "Apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "multiplex",
+        "options": {}
+      },
+      "id": "merge-with-resume",
+      "name": "Merge Jobs with Resume Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "chat",
+        "operation": "message",
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert recruiter analyzing job descriptions. Your task is to score job relevance on a scale of 0-10 based on how well the job matches the candidate's resume. Consider skills, experience, job title, location, and responsibilities. Return ONLY a JSON object with: {\"relevanceScore\": X, \"reasoning\": \"brief explanation\", \"matchingSkills\": [\"skill1\", \"skill2\"], \"missingSkills\": [\"skill1\"]}"
+            },
+            {
+              "role": "user",
+              "content": "=Job Description:\n{{ $json.positionName }}\n{{ $json.description }}\n\nCompany: {{ $json.companyName }}\nLocation: {{ $json.location }}\n\n\nCandidate Resume Summary:\n{{ $('Read Resume Data').item.json.summary }}\n\nCandidate Skills:\n{{ $('Read Resume Data').item.json.skills }}\n\nIs this job relevant? Score 0-10 and explain."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "filter-jobs-gpt4",
+      "name": "Part 4: Filter Jobs with GPT-4o",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "2",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.relevanceScore }}",
+              "rightValue": "={{ $node['Part 1-2: Set Job Search Parameters'].json['minRelevanceScore'] }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-relevant-jobs",
+      "name": "Part 5: Keep Only Relevant Jobs (Score >= 7)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1500, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "chat",
+        "operation": "message",
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert resume writer. Create a customized, professional HTML resume tailored for the specific job posting. Use modern HTML/CSS formatting. Highlight the most relevant skills and experiences for THIS specific role. Keep it concise (1-2 pages). Use professional styling with good typography."
+            },
+            {
+              "role": "user",
+              "content": "=Create a custom resume for this job:\n\nJob Title: {{ $json.positionName }}\nCompany: {{ $json.companyName }}\nDescription: {{ $json.description }}\nRequired Skills: {{ $json.matchingSkills }}\n\n\nBase Resume Data:\nName: {{ $('Read Resume Data').item.json.personalInfo.name }}\nTitle: {{ $('Read Resume Data').item.json.personalInfo.title }}\nSummary: {{ $('Read Resume Data').item.json.summary }}\nSkills: {{ $('Read Resume Data').item.json.skills }}\nExperience: {{ $('Read Resume Data').item.json.experience }}\nProjects: {{ $('Read Resume Data').item.json.projects }}\n\n\nCustomize the resume to emphasize relevant skills for THIS job. Output ONLY the complete HTML code (no markdown, no explanation)."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "generate-custom-resume",
+      "name": "Part 6: Generate Custom HTML Resume",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [1750, 250],
+      "credentials": {
+        "openAiApi": {
+          "id": "2",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "operation": "create",
+        "title": "=Resume - {{ $json.companyName }} - {{ $json.positionName }}",
+        "content": "={{ $json.resumeHtml }}",
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "create-google-doc",
+      "name": "Part 7: Create Google Doc Resume",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [2000, 250],
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "3",
+          "name": "Google Docs OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEETS_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": ["positionName"],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "positionName",
+              "displayName": "Position",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "companyName",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "relevanceScore",
+              "displayName": "Relevance Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "matchingSkills",
+              "displayName": "Matching Skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "docUrl",
+              "displayName": "Resume Doc URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "jobUrl",
+              "displayName": "Job URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-to-sheets",
+      "name": "Part 8: Log to Google Sheets Database",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [2250, 250],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "filePath": "=F:\\study\\AI_ML\\AI_and_Machine_Learning\\Artificial_Intelligence\\ai-job-bot\\resume-data.json"
+      },
+      "id": "read-resume-data",
+      "name": "Read Resume Data",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [750, 500]
+    },
+    {
+      "parameters": {
+        "operation": "aggregateItems",
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "summarize-results",
+      "name": "Summarize Results",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [2500, 250]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $env.TELEGRAM_CHAT_ID }}"
+            },
+            {
+              "name": "text",
+              "value": "=✅ AI Job Bot completed!\n\n📊 Jobs processed: {{ $json.totalJobs }}\n✅ Relevant jobs found: {{ $json.relevantJobs }}\n📝 Resumes created: {{ $json.resumesGenerated }}\n\n🔗 Check Google Drive for resumes\n📊 View Google Sheets for full log"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-telegram-notification",
+      "name": "Send Telegram Notification (Optional)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2750, 250],
+      "disabled": false
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Part 1-2: Set Job Search Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Part 1-2: Set Job Search Parameters": {
+      "main": [
+        [
+          {
+            "node": "Part 3: Scrape LinkedIn Jobs (Apify)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Resume Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Part 3: Scrape LinkedIn Jobs (Apify)": {
+      "main": [
+        [
+          {
+            "node": "Merge Jobs with Resume Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Resume Data": {
+      "main": [
+        [
+          {
+            "node": "Merge Jobs with Resume Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Jobs with Resume Data": {
+      "main": [
+        [
+          {
+            "node": "Part 4: Filter Jobs with GPT-4o",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Part 4: Filter Jobs with GPT-4o": {
+      "main": [
+        [
+          {
+            "node": "Part 5: Keep Only Relevant Jobs (Score >= 7)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Part 5: Keep Only Relevant Jobs (Score >= 7)": {
+      "main": [
+        [
+          {
+            "node": "Part 6: Generate Custom HTML Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Part 6: Generate Custom HTML Resume": {
+      "main": [
+        [
+          {
+            "node": "Part 7: Create Google Doc Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Part 7: Create Google Doc Resume": {
+      "main": [
+        [
+          {
+            "node": "Part 8: Log to Google Sheets Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Part 8: Log to Google Sheets Database": {
+      "main": [
+        [
+          {
+            "node": "Summarize Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Results": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Notification (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-03-09T19:24:00.000Z",
+  "versionId": "1"
+}

@@ -1,0 +1,210 @@
+{
+  "_comment": "Backup Scheduler Configuration Examples",
+  "examples": [
+    {
+      "name": "Basic Daily Incremental (Default)",
+      "description": "Simple incremental backups with 7-day retention",
+      "config": {
+        "scheduleTime": "02:00",
+        "backupType": "Incremental",
+        "fullBackupDay": "Sunday",
+        "compressionEnabled": true,
+        "cloudSyncEnabled": false,
+        "retentionPolicy": 7,
+        "notificationMethod": "toast",
+        "sourceDirectories": [
+          "C:\\Users\\Till\\Documents",
+          "C:\\Users\\Till\\Desktop"
+        ],
+        "excludePatterns": [
+          "*.tmp",
+          "*.cache",
+          "Temp\\*",
+          "node_modules\\*"
+        ],
+        "enabled": false
+      }
+    },
+    {
+      "name": "Aggressive Retention",
+      "description": "Keep 30 days of backups, retry up to 5 times on failure",
+      "config": {
+        "scheduleTime": "23:00",
+        "backupType": "Incremental",
+        "fullBackupDay": "Sunday",
+        "compressionEnabled": true,
+        "cloudSyncEnabled": false,
+        "retentionPolicy": 30,
+        "notificationMethod": "toast",
+        "retryOnNetworkFailure": true,
+        "maxRetries": 5,
+        "retryDelaySeconds": 60,
+        "sourceDirectories": [
+          "C:\\Users\\Till\\Documents",
+          "C:\\Users\\Till\\Desktop",
+          "C:\\Users\\Till\\AppData\\Roaming"
+        ],
+        "enabled": false
+      }
+    },
+    {
+      "name": "Full Weekly + Email Notifications",
+      "description": "Weekly full backups with email alerts",
+      "config": {
+        "scheduleTime": "03:00",
+        "backupType": "Full",
+        "fullBackupDay": "Sunday",
+        "compressionEnabled": true,
+        "cloudSyncEnabled": false,
+        "retentionPolicy": 5,
+        "notificationMethod": "email",
+        "emailRecipient": "till@example.com",
+        "sourceDirectories": [
+          "C:\\Users\\Till\\Documents",
+          "C:\\Users\\Till\\Desktop",
+          "D:\\Projects"
+        ],
+        "enabled": false
+      }
+    },
+    {
+      "name": "Minimal System Impact",
+      "description": "Late night backup with high idle threshold",
+      "config": {
+        "scheduleTime": "22:00",
+        "backupType": "Incremental",
+        "fullBackupDay": "Sunday",
+        "compressionEnabled": true,
+        "cloudSyncEnabled": false,
+        "retentionPolicy": 7,
+        "notificationMethod": "toast",
+        "checkIdleMinutes": 10,
+        "idleThreshold": 30,
+        "pauseProcesses": [
+          "sql*",
+          "sqlservr",
+          "outlook",
+          "vscode",
+          "chrome",
+          "firefox"
+        ],
+        "sourceDirectories": [
+          "C:\\Users\\Till\\Documents"
+        ],
+        "excludePatterns": [
+          "*.tmp",
+          "*.cache",
+          "Temp\\*",
+          "node_modules\\*",
+          ".git\\*"
+        ],
+        "enabled": false
+      }
+    },
+    {
+      "name": "Enterprise-Grade",
+      "description": "Multiple sources, strict retention, email & cloud",
+      "config": {
+        "scheduleTime": "02:00",
+        "backupType": "Incremental",
+        "fullBackupDay": "Monday",
+        "compressionEnabled": true,
+        "cloudSyncEnabled": true,
+        "cloudProvider": "OneDrive",
+        "retentionPolicy": 14,
+        "notificationMethod": "email",
+        "emailRecipient": "backups@till-systems.local",
+        "pauseProcesses": [
+          "sql*",
+          "sqlservr",
+          "outlook",
+          "vscode",
+          "chrome",
+          "msaccess"
+        ],
+        "sourceDirectories": [
+          "C:\\Users\\Till\\Documents",
+          "C:\\Users\\Till\\Desktop",
+          "D:\\ProjectsActive",
+          "D:\\Databases",
+          "E:\\Archives"
+        ],
+        "excludePatterns": [
+          "*.tmp",
+          "*.cache",
+          "Temp\\*",
+          "node_modules\\*",
+          ".git\\*",
+          ".vs\\*",
+          "bin\\*",
+          "obj\\*"
+        ],
+        "retryOnNetworkFailure": true,
+        "maxRetries": 5,
+        "retryDelaySeconds": 120,
+        "checkIdleMinutes": 5,
+        "idleThreshold": 15,
+        "enabled": false
+      }
+    },
+    {
+      "name": "Development Environment",
+      "description": "Backup code, documents, but exclude build artifacts",
+      "config": {
+        "scheduleTime": "01:00",
+        "backupType": "Incremental",
+        "fullBackupDay": "Friday",
+        "compressionEnabled": true,
+        "cloudSyncEnabled": false,
+        "retentionPolicy": 10,
+        "notificationMethod": "toast",
+        "sourceDirectories": [
+          "C:\\Users\\Till\\Documents",
+          "C:\\Users\\Till\\Desktop",
+          "D:\\Dev\\Projects"
+        ],
+        "excludePatterns": [
+          "node_modules\\*",
+          ".git\\*",
+          ".vs\\*",
+          "bin\\*",
+          "obj\\*",
+          "dist\\*",
+          ".next\\*",
+          "venv\\*",
+          "__pycache__\\*",
+          "*.tmp",
+          "*.log"
+        ],
+        "enabled": false
+      }
+    },
+    {
+      "name": "Critical Data Only",
+      "description": "Quick backup of most important files only",
+      "config": {
+        "scheduleTime": "12:00",
+        "backupType": "Incremental",
+        "fullBackupDay": "Sunday",
+        "compressionEnabled": true,
+        "cloudSyncEnabled": false,
+        "retentionPolicy": 30,
+        "notificationMethod": "toast",
+        "checkIdleMinutes": 1,
+        "idleThreshold": 5,
+        "sourceDirectories": [
+          "C:\\Users\\Till\\Documents",
+          "C:\\Users\\Till\\Desktop"
+        ],
+        "excludePatterns": [
+          "Videos\\*",
+          "Music\\*",
+          "Pictures\\*",
+          "*.iso",
+          "*.exe"
+        ],
+        "enabled": false
+      }
+    }
+  ]
+}

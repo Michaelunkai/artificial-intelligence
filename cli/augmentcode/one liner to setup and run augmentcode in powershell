@@ -1,0 +1,1 @@
+npm install -g @augmentcode/auggie; auggie login; auggie

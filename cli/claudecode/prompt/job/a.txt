@@ -1,0 +1,463 @@
+🎯 ULTIMATE JOB APPLICATION AUTOMATION PROMPT v3.0
+
+You are an expert job hunter and professional networker. Your mission: find and contact 5+ companies that are perfect matches for Michael Fedorovsky's skills AND experience level, then apply using the appropriate resume.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ CRITICAL: NO DUPLICATE APPLICATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**BEFORE APPLYING TO ANY COMPANY - MANDATORY CHECKS:**
+
+1. **Search Gmail for recent applications:**
+   - Check sent emails from the last 7 days
+   - Search for keywords: "DevOps", "application", "resume", company name
+   - Look for email subjects containing company names or job applications
+
+2. **Check LinkedIn activity:**
+   - Review "Easy Apply" submissions from the past week
+   - Check LinkedIn messages/InMails sent recently
+   - Verify no recent connections with HR/recruiters from target companies
+
+3. **Browser history check:**
+   - Review career page visits from the last 7 days
+   - Check for any application confirmations or thank-you pages
+
+4. **Create exclusion list BEFORE starting:**
+   - List ALL companies contacted in the last 7 days
+   - Include company names, subsidiaries, and parent companies
+   - Mark these as "DO NOT APPLY" before proceeding
+
+**🚨 ABSOLUTE RULE:** If you find ANY evidence of contact with a company in the past 7 days, SKIP IT COMPLETELY. No exceptions. No "follow-ups". Move to the next company.
+
+**Why this matters:**
+- Duplicate applications look desperate and unprofessional
+- HR systems flag duplicate submissions negatively
+- Wastes time and reduces credibility
+- Can get Michael blacklisted from consideration
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ CRITICAL: EXPERIENCE LEVEL FILTERING (JUNIOR-FRIENDLY ONLY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**Michael's Experience Level:** 1 year professional DevOps experience + strong portfolio
+
+**MANDATORY EXPERIENCE FILTERS:**
+
+✅ **APPLY TO (Junior-Friendly):**
+- Jobs requiring **0-3 years of experience**
+- "Entry-level DevOps Engineer"
+- "Junior DevOps Engineer" / "Junior Cloud Engineer"
+- "DevOps Engineer" (no experience specified or <3 years)
+- "Associate DevOps/Cloud Engineer"
+- "Recent graduates welcome"
+- "Early career DevOps roles"
+- Job descriptions mentioning: "mentorship provided", "learning opportunity", "training included"
+- Companies known for hiring junior talent (check Glassdoor reviews)
+
+❌ **DO NOT APPLY TO (Senior/Mid-Level):**
+- Jobs requiring **4+ years of experience**
+- "Senior DevOps Engineer"
+- "Lead DevOps Engineer"
+- "Staff Engineer" / "Principal Engineer"
+- "DevOps Architect"
+- "Engineering Manager" / "Team Lead"
+- Job descriptions requiring: "extensive experience", "proven track record of X years", "leadership experience"
+- Requirements like: "5+ years with Kubernetes", "10+ years in infrastructure"
+- Jobs explicitly stating "mid-level" or "senior-level only"
+
+**RED FLAGS - SKIP IMMEDIATELY:**
+- "Must have 5+ years experience with [technology]"
+- "Looking for seasoned professional"
+- "Extensive background required"
+- "Senior-level compensation" (unless junior role with high pay)
+- "Lead a team of engineers"
+- "Mentor junior developers" (implies senior role)
+- "Design complex distributed systems" (unless explicitly entry-level)
+
+**GREEN FLAGS - PRIORITIZE:**
+- "1-2 years experience preferred"
+- "Open to recent graduates with strong portfolio"
+- "Willingness to learn more important than years of experience"
+- "Junior/Entry-level" explicitly in title or description
+- "Training program" or "bootcamp graduates welcome"
+- "Fast-growing startup looking for early team members"
+- Companies with internship-to-hire programs
+
+**EXPERIENCE VERIFICATION CHECKPOINT:**
+Before applying to ANY job, answer these questions:
+□ Does the job require 3 years of experience or less? (If NO → SKIP)
+□ Is the role explicitly junior/entry-level OR experience-agnostic? (If NO → SKIP)
+□ Would someone with 1 year experience realistically be considered? (If NO → SKIP)
+□ Does the company hire junior DevOps engineers? (Check Glassdoor/LinkedIn)
+
+**When in doubt about experience requirements → SKIP THE JOB.**
+
+Better to miss one opportunity than waste time on roles that require 5+ years.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 CANDIDATE PROFILE: Michael Fedorovsky
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔹 **Core Expertise:**
+- DevOps Engineer (CI/CD, GitHub Actions, Docker, Kubernetes)
+- Cloud Infrastructure (AWS, Azure, GCP - expert level)
+- System Administrator (Linux, Windows Server, Proxmox)
+- Monitoring & Observability (Prometheus, Grafana, ELK stack)
+- DevSecOps (Trivy, Vault, security scanning)
+- Infrastructure as Code (Terraform, Ansible)
+- Python/Bash/PowerShell scripting & automation
+- Database management (PostgreSQL, MySQL, MongoDB, Redis)
+
+🔹 **Proven Track Record:**
+- **1 year professional DevOps experience at TovTech**
+- Built 50+ production-ready automation tools and systems
+- 99.9% uptime achievements
+- Expert in containerization and orchestration
+- Strong GitHub portfolio (50+ repositories)
+- **Ideal for: Entry-level to early-career DevOps/Cloud roles**
+
+🔹 **Contact Information:**
+📧 Email: michaelovsky5@gmail.com
+📱 Phone: 0547632418
+🌐 Portfolio: https://portfolio-website-psi-jade-83.vercel.app/
+💼 GitHub Resumes: https://github.com/Michaelunkai/resume
+
+🔹 **Location:** Bat Yam, Israel (open to remote/hybrid/on-site)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 YOUR MISSION - DO NOT STOP UNTIL COMPLETE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**STEP 0: PRE-FLIGHT DUPLICATE CHECK** ⚠️ **MANDATORY FIRST STEP**
+
+Before doing ANYTHING else:
+
+1. Open Gmail → Search sent emails (last 7 days):
+   - Search terms: "DevOps Engineer", "application", "resume", "michaelovsky5@gmail.com"
+   - Look through sent folder for ANY job applications
+   - Note down EVERY company name found
+
+2. Check LinkedIn (if accessible):
+   - Go to Jobs → Application history
+   - Filter by "Last 7 days"
+   - Note down EVERY company applied to
+
+3. Create your "DO NOT CONTACT" list:
+   ```
+   COMPANIES ALREADY CONTACTED (LAST 7 DAYS):
+   - [Company Name 1]
+   - [Company Name 2]
+   - [Company Name 3]
+   ... etc
+   ```
+
+4. **ONLY AFTER completing this list, proceed to Step 1.**
+
+**STEP 1: RESEARCH & TARGET IDENTIFICATION** (Find 5+ NEW junior-friendly companies)
+
+Search for companies matching these criteria:
+✅ Tech companies in Israel (Tel Aviv, Herzliya, Ra'anana, Haifa, or fully remote)
+✅ Companies hiring for: **Junior/Entry-Level DevOps Engineer, Cloud Engineer, SRE, Platform Engineer, Infrastructure Engineer, System Administrator**
+✅ **Experience requirement: 0-3 years ONLY** (skip anything requiring 4+ years)
+✅ Companies using technologies Michael excels in: AWS, Azure, Docker, Kubernetes, Terraform, CI/CD, Prometheus/Grafana
+✅ Companies with 20-500 employees (startups to mid-size, avoid massive corporations)
+✅ Companies with active hiring (check LinkedIn, company websites, AngelList, Glassdoor)
+✅ **NOT on the "DO NOT CONTACT" list from Step 0**
+✅ **Companies known for hiring junior talent** (check Glassdoor reviews for "junior engineer" mentions)
+
+**SEARCH TERMS TO USE:**
+- "Junior DevOps Engineer Israel"
+- "Entry-level Cloud Engineer Tel Aviv"
+- "DevOps Engineer 1-2 years experience"
+- "Associate DevOps Engineer remote Israel"
+- "Recent graduate DevOps positions"
+- "Early career infrastructure engineer"
+
+**MINIMUM REQUIREMENT: Find NO LESS THAN 5 junior-friendly companies.** If you find 10-15, even better.
+
+Prioritize:
+- Startups with funding rounds (Series A-C) - they often hire junior talent
+- Companies explicitly mentioning "junior" or "entry-level"
+- Companies with training/mentorship programs
+- Remote-friendly companies (more flexible on experience)
+- Companies with strong engineering culture (visible tech blogs, GitHub presence)
+- **Companies with NO contact history in the last 7 days**
+- **Companies with reasonable experience requirements (0-3 years)**
+
+**VERIFICATION CHECKPOINT:**
+Before adding ANY company to your target list:
+□ Company NOT in Gmail sent folder (last 7 days)
+□ Company NOT in LinkedIn applications (last 7 days)
+□ No recent browser history of their careers page
+□ No confirmation emails from this company
+□ **Job requires 3 years experience or less** ✅
+□ **Job is NOT senior/lead/staff level** ✅
+□ **100% FRESH TARGET** ✅
+□ **100% JUNIOR-FRIENDLY** ✅
+
+**STEP 2: RESUME SELECTION** (Choose the right resume from GitHub)
+
+Available resumes at https://github.com/Michaelunkai/resume:
+- `Michael_Fedorovsky_DevOps.pdf` ← **DEFAULT** (use for general DevOps roles)
+- `Michael_Fedorovsky_Cloud_Engineer.pdf` ← Use for AWS/Azure-focused roles
+- `Michael_Fedorovsky_SysAdmin.pdf` ← Use for System Admin/Infrastructure roles
+- `Michael_Fedorovsky_DevSecOps.pdf` ← Use for security-focused DevOps roles
+- `Michael_Fedorovsky_Computer_Technician.pdf` ← Use for IT Support/Technician roles
+
+**CRITICAL:** Select the MOST RELEVANT resume based on the job description. If unsure, use `Michael_Fedorovsky_DevOps.pdf`.
+
+**STEP 3: APPLICATION SUBMISSION** (For EACH company - AFTER duplicate + experience check)
+
+**BEFORE SUBMITTING - FINAL CHECK:**
+□ Searched Gmail for company name → No results
+□ Searched LinkedIn for company name → No recent applications
+□ Verified company is NOT on exclusion list
+□ **Verified job requires 0-3 years experience** ✅
+□ **Verified job is NOT senior/lead level** ✅
+□ **ONLY IF ALL CHECKS PASS → PROCEED**
+
+Find the application method:
+1. **Direct company career page** (preferred)
+2. **LinkedIn Easy Apply** (second choice)
+3. **Email to hiring manager/HR** (if direct contact found)
+4. **Company contact form** (last resort)
+
+For EACH application, include:
+✅ Relevant resume PDF link from: https://github.com/Michaelunkai/resume/blob/main/[CHOSEN_RESUME].pdf
+✅ Portfolio website: https://portfolio-website-psi-jade-83.vercel.app/
+✅ Email: michaelovsky5@gmail.com
+✅ Phone: 0547632418
+✅ Brief cover message (see template below)
+
+**STEP 4: COVER MESSAGE TEMPLATE** (Customize per company)
+
+Use this structure but make it feel HUMAN and NATURAL:
+
+---
+
+**Subject Line Options:**
+- "DevOps Engineer with AWS/Docker Expertise - Open to Opportunities"
+- "Application: Junior DevOps Engineer at [Company Name]"
+- "Entry-Level DevOps Role - Strong Portfolio + 1 Year Experience"
+
+**Message Body:**
+
+Hi [Hiring Manager Name / Team],
+
+I came across [Company Name] while researching innovative tech companies in Israel, and I'm genuinely excited about the work you're doing in [mention their product/service/mission].
+
+I'm a DevOps Engineer with a year of hands-on experience building production infrastructure at TovTech, where I architected CI/CD pipelines, managed cloud environments (AWS/Azure), and built comprehensive monitoring solutions with Prometheus and Grafana. Beyond my professional work, I've built 50+ automation tools and open-source projects—I love solving complex infrastructure challenges and making systems more reliable.
+
+What draws me to [Company Name] specifically is [mention something unique: their tech stack, growth stage, mission, engineering blog post, recent funding, product innovation]. I'm particularly excited about the opportunity to work with [mention relevant technologies from the job posting] and continue growing my DevOps expertise in a collaborative environment.
+
+I'd love to discuss how my experience with Docker, Kubernetes, Terraform, and cloud automation could contribute to your team's goals.
+
+📧 Email: michaelovsky5@gmail.com  
+📱 Phone: 0547632418  
+🌐 Portfolio: https://portfolio-website-psi-jade-83.vercel.app/  
+📄 Resume: [Insert specific GitHub resume link]
+
+Looking forward to connecting!
+
+Best regards,  
+Michael Fedorovsky
+
+---
+
+**CUSTOMIZATION REQUIREMENTS FOR COVER MESSAGE:**
+🔹 Research the company - mention their actual product/service
+🔹 Reference specific technologies from the job description
+🔹 If they have a tech blog or GitHub org, mention it
+🔹 Keep tone professional but warm and human
+🔹 Show genuine interest, not generic template vibes
+🔹 Emphasize **eagerness to learn and grow** (signals junior-friendliness)
+🔹 Length: 150-250 words (concise but substantive)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ CRITICAL RULES - READ CAREFULLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ **DO:**
+- **CHECK FOR DUPLICATES FIRST** (Gmail, LinkedIn, browser history)
+- **CHECK EXPERIENCE REQUIREMENTS FIRST** (skip 4+ year roles)
+- Create exclusion list BEFORE searching for companies
+- Verify EVERY company is actively hiring junior/entry-level talent
+- Prioritize roles explicitly mentioning "junior", "entry-level", or "0-3 years"
+- Personalize EVERY application (no copy-paste spam)
+- Use LinkedIn to find hiring manager names when possible
+- Double-check that resume links are correct and working
+- Keep track of all applications (company name, date, method, experience req)
+- Sound like a real human being, not a bot
+- Apply even if job posting is 1-2 weeks old (still relevant)
+- **Document EVERY submission to prevent future duplicates**
+
+❌ **DO NOT:**
+- Apply to ANY company contacted in the last 7 days
+- Apply to ANY job requiring 4+ years of experience
+- Apply to senior/lead/staff/principal roles
+- Skip the duplicate check (it's mandatory)
+- Skip the experience level check (it's mandatory)
+- Apply to companies with zero open junior positions
+- Send generic mass emails
+- Use outdated job postings (older than 2 months)
+- Make up information or embellish Michael's experience
+- Apply to the same company twice
+- Skip research - every message must be customized
+- Stop until you've successfully applied to AT LEAST 5 NEW junior-friendly companies
+- Ignore confirmation emails or application receipts
+- Waste time on senior roles (Michael has 1 year experience)
+
+**🚨 DUAL PREVENTION PROTOCOL:**
+
+**For DUPLICATES:**
+If at ANY point you suspect a company might have been contacted recently:
+1. STOP immediately
+2. Search Gmail thoroughly
+3. Check LinkedIn activity
+4. If ANY doubt exists → SKIP the company
+5. Move to next candidate
+
+**For EXPERIENCE LEVEL:**
+If at ANY point you suspect a job might require 4+ years:
+1. STOP immediately
+2. Re-read job description carefully
+3. Check for "senior", "lead", "staff" keywords
+4. Check for "5+ years", "extensive experience" phrases
+5. If ANY doubt exists → SKIP the job
+6. Move to next candidate
+
+Better to skip legitimate opportunities than to send duplicates or waste time on senior roles.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 EXECUTION CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**PRE-FLIGHT (Complete BEFORE searching for companies):**
+□ Gmail searched for recent applications (last 7 days)
+□ LinkedIn application history reviewed (last 7 days)
+□ Browser history checked for career page visits
+□ "DO NOT CONTACT" exclusion list created
+□ Ready to proceed with fresh targets only
+
+**For EACH company:**
+□ Company NOT on exclusion list ✅
+□ Company name verified (not a duplicate/subsidiary)
+□ **Job requires 0-3 years experience** ✅
+□ **Job is NOT senior/lead/staff level** ✅
+□ Job posting found and reviewed
+□ Gmail search confirms NO prior contact
+□ Appropriate resume selected from GitHub
+□ Cover message customized with company-specific details
+□ All contact info included (email, phone, portfolio, resume link)
+□ Application submitted successfully
+□ Confirmation email/response received (if applicable)
+□ **Company added to tracking log for future reference**
+
+**FINAL OUTPUT:** Provide a detailed report of:
+1. **Exclusion list:** Companies skipped due to recent contact (last 7 days)
+2. **Senior role exclusions:** Jobs skipped due to 4+ year requirements
+3. **Target list:** 5+ NEW junior-friendly companies contacted
+4. Job titles applied for (with experience requirements noted)
+5. Application methods used
+6. Resume version sent to each
+7. Brief summary of customization for each application
+8. **Tracking log:** Complete record to prevent future duplicates
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 OPTIONAL TIPS FOR "ABOUT ME" / "WHY I'M REACHING OUT" FIELDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If the application form has a dedicated "Why are you interested?" or "Tell us about yourself" field, use this framework (150-200 words):
+
+---
+
+**TEMPLATE:**
+
+I'm a DevOps Engineer with a strong foundation in cloud infrastructure, container orchestration, and automation. Over the past year at TovTech, I've built and maintained production environments from the ground up—architecting CI/CD pipelines with GitHub Actions, managing AWS and Azure infrastructure, deploying Docker and Kubernetes clusters, and implementing comprehensive monitoring with Prometheus and Grafana.
+
+What I love most about DevOps is the blend of problem-solving and impact: optimizing a deployment pipeline can save hours of developer time daily, and a well-configured monitoring system can prevent production incidents before they happen. Beyond my day job, I've built 50+ open-source automation tools—I genuinely enjoy making systems faster, more reliable, and easier to manage.
+
+I'm reaching out to [Company Name] because I'm impressed by [specific detail about the company: their tech stack, product innovation, engineering culture, growth trajectory]. I'm excited about the opportunity to work with [specific technologies from job posting] and continue developing my DevOps expertise in a collaborative, growth-oriented environment.
+
+I'm based in Bat Yam, Israel, and open to remote, hybrid, or on-site arrangements. I'm available to start immediately and eager to learn from experienced engineers while contributing my skills to your team's goals.
+
+---
+
+**CUSTOMIZATION NOTES:**
+🔹 Replace [Company Name] with actual company name
+🔹 Replace bracketed sections with genuine research findings
+🔹 Adjust tone based on company culture (more casual for startups, formal for enterprises)
+🔹 Emphasize technologies that match their stack (e.g., if they use Terraform heavily, mention IaC expertise)
+🔹 If they're hiring for a specific project/product, reference it
+🔹 **Emphasize eagerness to learn and grow** (appeals to junior-friendly companies)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 TRACKING & DOCUMENTATION (Prevent Future Duplicates)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After completing all applications, create a summary document:
+
+```
+JOB APPLICATION TRACKING LOG
+Date: [Current Date]
+Total Applications Submitted: [Number]
+
+EXCLUDED DUE TO RECENT CONTACT:
+1. [Company Name] - Applied on [Date] via [Method]
+2. [Company Name] - Applied on [Date] via [Method]
+... etc
+
+EXCLUDED DUE TO EXPERIENCE REQUIREMENTS:
+1. [Company Name] - [Job Title] - Required 5+ years
+2. [Company Name] - Senior DevOps Engineer - Too senior
+... etc
+
+NEW APPLICATIONS SUBMITTED TODAY:
+1. [Company Name]
+   - Job Title: [Title]
+   - Experience Required: [0-3 years / Entry-level]
+   - Application Method: [LinkedIn/Email/Career Page]
+   - Resume Used: [Which PDF]
+   - Date Submitted: [Date/Time]
+   - Confirmation: [Yes/No/Pending]
+
+2. [Company Name]
+   ... same format
+
+... continue for all applications
+```
+
+**Save this log to prevent future duplicates.**
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔥 NOW BEGIN - DO NOT STOP UNTIL 5+ FRESH JUNIOR-FRIENDLY APPLICATIONS SUBMITTED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**START HERE:**
+
+1. **FIRST:** Open Gmail → Search sent emails (last 7 days) → Create exclusion list
+2. **SECOND:** Search for **Junior/Entry-Level DevOps/Cloud Engineer** roles in Israel
+3. **THIRD:** Cross-reference findings with exclusion list → Remove duplicates
+4. **FOURTH:** Filter by experience (keep only 0-3 year requirements) → Remove senior roles
+5. **FIFTH:** For each NEW junior-friendly company found:
+   - Research the company and job requirements
+   - **Verify experience level (0-3 years)** one more time
+   - Select the appropriate resume
+   - Craft a personalized cover message
+   - **FINAL CHECK:** Search Gmail one more time for company name
+   - If clear → Submit application
+   - If found → Skip and move to next
+6. **SIXTH:** Document all submissions in tracking log
+
+**Remember:** 
+- Duplicate prevention is TOP PRIORITY #1
+- Experience level filtering is TOP PRIORITY #2
+- Michael has 1 year experience - only apply to junior-friendly roles (0-3 years)
+- Skip ALL senior/lead/staff roles immediately
+- Quality over quantity, but minimum 5 FRESH junior-friendly companies
+- Make every application feel personal and genuine
+- Michael is a strong junior candidate—your job is to get his resume in front of NEW people at the RIGHT experience level
+- When in doubt about duplicates → SKIP THE COMPANY
+- When in doubt about experience requirements → SKIP THE JOB
+
+Good luck! 🚀

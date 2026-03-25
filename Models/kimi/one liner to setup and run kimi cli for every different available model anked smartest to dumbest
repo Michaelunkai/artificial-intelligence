@@ -1,0 +1,24 @@
+
+  1. Smartest: kimi-k2-plus-preview
+  $configDir = Join-Path $env:APPDATA 'kimi-cli'; If (-not (Test-Path $configDir)) { New-Item -Path $configDir -ItemType Directory };
+  $configPath = Join-Path $configDir 'config.json'; if (Test-Path $configPath) { $config = Get-Content $configPath | ConvertFrom-Json } else
+  { $config = [pscustomobject]@{} }; Add-Member -InputObject $config -MemberType NoteProperty -Name 'model' -Value 'kimi-k2-plus-preview'
+  -Force; $config | ConvertTo-Json | Set-Content $configPath; Write-Host 'SUCCESS: Kimi CLI model set to kimi-k2-plus-preview.'
+
+  2. kimi-k2-pro-preview
+  $configDir = Join-Path $env:APPDATA 'kimi-cli'; If (-not (Test-Path $configDir)) { New-Item -Path $configDir -ItemType Directory };
+  $configPath = Join-Path $configDir 'config.json'; if (Test-Path $configPath) { $config = Get-Content $configPath | ConvertFrom-Json } else
+  { $config = [pscustomobject]@{} }; Add-Member -InputObject $config -MemberType NoteProperty -Name 'model' -Value 'kimi-k2-pro-preview'
+  -Force; $config | ConvertTo-Json | Set-Content $configPath; Write-Host 'SUCCESS: Kimi CLI model set to kimi-k2-pro-preview.'
+
+  3. kimi-k2-64k-preview (Largest Context)
+  $configDir = Join-Path $env:APPDATA 'kimi-cli'; If (-not (Test-Path $configDir)) { New-Item -Path $configDir -ItemType Directory };
+  $configPath = Join-Path $configDir 'config.json'; if (Test-Path $configPath) { $config = Get-Content $configPath | ConvertFrom-Json } else
+  { $config = [pscustomobject]@{} }; Add-Member -InputObject $config -MemberType NoteProperty -Name 'model' -Value 'kimi-k2-64k-preview'
+  -Force; $config | ConvertTo-Json | Set-Content $configPath; Write-Host 'SUCCESS: Kimi CLI model set to kimi-k2-64k-preview.'
+
+  4. Dumbest (Fastest): kimi-k2-turbo-preview
+  $configDir = Join-Path $env:APPDATA 'kimi-cli'; If (-not (Test-Path $configDir)) { New-Item -Path $configDir -ItemType Directory };
+  $configPath = Join-Path $configDir 'config.json'; if (Test-Path $configPath) { $config = Get-Content $configPath | ConvertFrom-Json } else
+  { $config = [pscustomobject]@{} }; Add-Member -InputObject $config -MemberType NoteProperty -Name 'model' -Value 'kimi-k2-turbo-preview'
+  -Force; $config | ConvertTo-Json | Set-Content $configPath; Write-Host 'SUCCESS: Kimi CLI model set to kimi-k2-turbo-preview.'

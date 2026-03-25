@@ -1,0 +1,49 @@
+{
+  "backup_path": "C:\\Backups",
+  "checksum_algorithm": "SHA256",
+  "max_bandwidth_mbps": 50,
+  "concurrent_uploads": 3,
+  "retry_attempts": 3,
+  "retry_delay_seconds": 5,
+  "providers": {
+    "onedrive": {
+      "enabled": false,
+      "tenant_id": "your-tenant-id",
+      "app_id": "your-app-id",
+      "secret": "your-secret",
+      "folder_id": "root",
+      "retention_days": 30
+    },
+    "gdrive": {
+      "enabled": false,
+      "credentials": "C:\\Path\\To\\credentials.json",
+      "folder_id": "root",
+      "retention_days": 30
+    },
+    "s3": {
+      "enabled": false,
+      "bucket": "my-backup-bucket",
+      "region": "us-east-1",
+      "prefix": "backups/",
+      "access_key": "your-access-key",
+      "secret_key": "your-secret-key",
+      "storage_class": "GLACIER",
+      "retention_days": 30
+    },
+    "smb": {
+      "enabled": false,
+      "server": "\\\\backup-server\\share",
+      "username": "domain\\user",
+      "password": "encrypted-password",
+      "retention_days": 30
+    }
+  },
+  "selective_sync": {
+    "enabled": false,
+    "components": [
+      "database",
+      "documents",
+      "configuration"
+    ]
+  }
+}

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentFlow - Multi-Agent Orchestration Dashboard</title>
+  <link rel="stylesheet" href="/agentflow/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1>🤖 AgentFlow</h1>
+        <p class="subtitle">Multi-Agent AI Orchestration Platform</p>
+      </div>
+      <div class="header-right">
+        <div class="status-badge" id="connectionStatus">
+          <span class="badge badge-success">● Connected</span>
+        </div>
+        <a href="/agentflow/scheduled.html" class="btn btn-secondary">⏰ Scheduled</a>
+        <a href="/agentflow/insights.html" class="btn btn-secondary">📊 Insights</a>
+        <button class="btn btn-secondary" onclick="refreshAll()">🔄 Refresh</button>
+      </div>
+    </header>
+
+    <!-- Bot Status Cards -->
+    <section class="section">
+      <h2>Bot Status</h2>
+      <div class="bot-grid" id="botGrid">
+        <!-- Bot cards populated by JS -->
+      </div>
+    </section>
+
+    <!-- Active Tasks -->
+    <section class="section">
+      <div class="section-header">
+        <h2>Active Tasks</h2>
+        <button class="btn btn-primary" onclick="showNewTaskModal()">➕ New Task</button>
+      </div>
+      <div class="task-list" id="activeTaskList">
+        <div class="empty-state">No active tasks</div>
+      </div>
+    </section>
+
+    <!-- Recent History -->
+    <section class="section">
+      <div class="section-header">
+        <h2>Recent History</h2>
+        <div class="filter-buttons">
+          <button class="btn btn-sm" onclick="filterTasks('all')">All</button>
+          <button class="btn btn-sm" onclick="filterTasks('completed')">Completed</button>
+          <button class="btn btn-sm" onclick="filterTasks('failed')">Failed</button>
+        </div>
+      </div>
+      <div class="task-list" id="historyTaskList">
+        <!-- Task history populated by JS -->
+      </div>
+    </section>
+
+    <!-- Analytics Dashboard -->
+    <section class="section">
+      <h2>Analytics</h2>
+      <div class="analytics-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Tasks</div>
+          <div class="stat-value" id="statTotalTasks">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Success Rate</div>
+          <div class="stat-value" id="statSuccessRate">0%</div>
+          <div id="successRateRing" class="stat-chart"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg Duration</div>
+          <div class="stat-value" id="statAvgDuration">0s</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Now</div>
+          <div class="stat-value" id="statActiveNow">0</div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-row">
+        <div class="chart-container">
+          <h3>Task Status Distribution</h3>
+          <div id="statusDonutChart" class="chart"></div>
+        </div>
+        <div class="chart-container">
+          <h3>Tasks Per Bot</h3>
+          <div id="botBarChart" class="chart"></div>
+        </div>
+      </div>
+
+      <!-- Timeline Chart -->
+      <div class="chart-container full-width">
+        <h3>Task Activity (Last 7 Days)</h3>
+        <div id="timelineChart" class="chart"></div>
+      </div>
+
+      <!-- Per-Bot Performance -->
+      <h3>Bot Performance (Last 7 Days)</h3>
+      <div class="performance-table" id="performanceTable">
+        <!-- Performance table populated by JS -->
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="section">
+      <h2>Quick Actions</h2>
+      <div class="quick-actions">
+        <button class="btn btn-action" onclick="quickAction('job', 'session2')">
+          💼 Apply to 10 Jobs<br><small>session2</small>
+        </button>
+        <button class="btn btn-action" onclick="quickAction('game', 'openclaw4')">
+          🎮 Download 5 Games<br><small>openclaw4</small>
+        </button>
+        <button class="btn btn-action" onclick="quickAction('tv', 'openclaw4')">
+          📺 Download TV Shows<br><small>openclaw4</small>
+        </button>
+        <button class="btn btn-action" onclick="quickAction('browser', 'openclaw')">
+          🌐 Browser Automation<br><small>openclaw</small>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- New Task Modal -->
+  <div id="newTaskModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Create New Task</h3>
+        <button class="close-btn" onclick="closeNewTaskModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <label for="taskDescription">Task Description</label>
+        <textarea id="taskDescription" placeholder="Describe what you want the agent to do..." rows="4"></textarea>
+
+        <label for="taskBot">Assign to Bot (optional)</label>
+        <select id="taskBot">
+          <option value="">Auto-assign</option>
+          <option value="session2">session2 (job applications, general)</option>
+          <option value="openclaw">openclaw (browser automation)</option>
+          <option value="openclaw4">openclaw4 (downloads, games, TV)</option>
+          <option value="main">main (general tasks)</option>
+        </select>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeNewTaskModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="createTask()">Create Task</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/agentflow/charts.js"></script>
+  <script src="/agentflow/websocket-client.js"></script>
+  <script src="/agentflow/app.js"></script>
+</body>
+</html>

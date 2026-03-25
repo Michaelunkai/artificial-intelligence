@@ -1,0 +1,173 @@
+Author's Philosophy & Workflow
+Critique of AI-Generated Content: Dislikes AI-generated posts, calling them annoying and hurtful to read. Identifies "vibe-coders" as frequent offenders.
+
+Personal AI Usage: Prefers to write code first, then use AI agents for improvement tasks like refactoring, modularizing monolithic scripts, and writing tests. Occasionally uses it to add features to existing tools.
+
+Rejection of "One-Shot" Generation: Found one-shot tool creation with AI to be unsuitable, disliking agents that overengineer. Values knowing what the code is doing.
+
+Warning for Novices: Advises against heavy reliance on AI coding tools without a solid foundational knowledge of programming.
+
+Anecdotal Evidence: Cites experienced developers as the ones who are most productive with AI tools. Recalls a personal failure where a "vibe coded" script to "distill" models did nothing, yet was well-received due to confirmation bias and marketing ("snake oil").
+
+Core Thesis: The tool used with a model is critical. A good tool drastically improves results, and some models work much better with specific, paired tools.
+
+Agentic Coding Tool Analysis
+Non-Recommendations (Platforms, not Tools)
+Warp:
+
+Critique: No BYOK (Bring Your Own Key) option.
+
+Status: "dead on arrival as a serious option".
+
+Model: Subscription-based with opaque "credits" system; no clear token/request conversion rates.
+
+Cursor:
+
+Critique: Suffers from the same issues as Warp (no BYOK, platform-as-a-service model).
+
+Trae + Seed / Augment:
+
+Critique: No BYOK.
+
+Recommendations & Reviews
+Roocode:
+
+Verdict: A very solid, all-around choice.
+
+Reputation: Highest rating of AI extensions on VSCode. Consistently top 1-3 in gosuevals.
+
+Features: Supports free code indexing with any provider, local API, or the free Gemini embedding API. Good VSCode integration.
+
+Qwen Code CLI:
+
+Verdict: The best free, no-frills option.
+
+Access: Sign up for a Qwen account for 4,000 qwen-coder-plus requests daily.
+
+Performance: Fast at 70 t/s. Simple and easy to use.
+
+Synergy: The Qwen3 coder open-source model performs significantly better with this specific tool.
+
+Features: Recent updates added a "planning mode".
+
+Droid:
+
+Status: Author is still testing.
+
+Performance: Scores highest in terminal bench but has mixed user feedback.
+
+Critique: Complaint that it "absolutely chews through tokens".
+
+Features: Supports BYOK at the free tier.
+
+Pricing Model: Attractive monthly plan: $20 for 20 million tokens.
+
+Claude Sonnet multiplier: 1.2x (16.7M tokens).
+
+GPT-5 Codex multiplier: 0.5x (40M tokens).
+
+GLM 4.6 multiplier: 0.25x (80M tokens).
+
+Trial: 20M tokens free for one month, or 40M for two months with a referral.
+
+Zed:
+
+Description: A very fast, Rust-based IDE. A middle ground between a text editor (Notepad++, Kate) and VSCode.
+
+Agentic Performance: Near the top of gosu's latest evals.
+
+Critique: "absolutely chews through tokens", even worse than Droid. Lacks a planning or orchestrator mode. Tends to overengineer everything.
+
+Features: Supports BYOK, making it a strong option for local models or cheap/free APIs.
+
+Trial: Two-week trial with $20 in credits.
+
+Claude Code:
+
+Description: The benchmark CLI tool to which others are compared.
+
+Features: Reliable, feature-rich. Zed has native support for it.
+
+Codex CLI / VSCode Extension:
+
+Reputation: Had mixed reception initially but has improved and is now well-liked.
+
+Synergy: GPT-5 models, especially Codex, do not shine until used with this tool. The performance difference is "very large".
+
+Crush:
+
+Description: Made by the developer of opencode and Charm. Open source.
+
+Verdict: A decent all-around tool with a nice UI, but "isn't anything special yet".
+
+Gemini CLI:
+
+Critique: The CLI is nice, but Gemini models perform poorly at agentic coding. Advised to wait for Gemini 3.0.
+
+Kilocode / Cline:
+
+Critique: Kilocode is based on Roocode and is now "playing catchup" as Roocode has implemented its features and performs better. Most users prefer Roocode over Cline.
+
+LLM Model Tiers for Agentic Coding
+Top Tier
+Sonnet 4.5: The single best model for agentic coding.
+
+GPT-5 Codex: Comes close to or is as good as Sonnet 4.5, but only when used with the Codex CLI or extension.
+
+Second Tier (Significantly below Top Tier)
+GPT-5 (non-codex): Near the top of this tier but costs the same as the superior Codex version.
+
+GPT-5 Mini (medium reasoning): Best bang-for-buck model in this tier. More capable than Deepseek v3.2.
+
+Deepseek v3.2-exp: By far the cheapest in this category and surprisingly capable. Rated just under Kimi K2 0905 and Qwen3 Coder 480b.
+
+GLM 4.6: With reasoning enabled, it is near the top of this tier. With reasoning disabled (as in the popular z.ai subscription), its capability drops to the level of Kimi K2 and Qwen Coder.
+
+Kimi K2 0905: One of the best non-thinking models. Rated slightly above GLM 4.6 (reasoning disabled) and Qwen Coder 480b (without Qwen CLI).
+
+Qwen3 Coder 480b: Ranks with Kimi and GLM 4.6, but gains an edge when used with the Qwen Code CLI.
+
+Local Models (for typical home computers)
+Best Bets:
+
+qwen3 coder 30b with Qwen Code CLI.
+
+gpt-oss 20b with Codex CLI/extension.
+
+Next Step Up (High VRAM/RAM):
+
+gpt-oss 120b with Codex CLI/extension.
+
+Free APIs, Credits, & Supporting Tools
+Enhancement: Use MCP (Multi-Copilot Protocol) servers like Exa Search and Context7 to improve agentic coding.
+
+Free GPT-5 Mini: Available through Copilot Pro, which is free with a student email.
+
+Nvidia NIM API: Provides Kimi K2 0905 for free with unlimited use at 40 RPM.
+
+Embedding Models:
+
+Gemini Embedding: The best available embedding model, free via API. Supported by Roocode.
+
+Qwen3 Embedding 8B (NebiusAI): The second-best embedding model (best OSS). Signup gives a $1 non-expiring credit, which "will last you forever" for embedding at $0.01/million tokens.
+
+Reranking Models:
+
+Qwen3 Reranker 8B (Novita): Signup provides a $1 voucher.
+
+Agent Router:
+
+Description: A "Chinese OpenRouter clone" with a buggy, partially translated website.
+
+Credits: Offers $125 in free credits ($100 via referral, $25 for login). Signup via GitHub/LinuxDo OAuth.
+
+Caveats: Models only work with specific tools and require following documentation. Suspected catch is that they store and use your data for training.
+
+Rates: Extremely low prices, e.g., GPT-5 at $0.003 per million tokens.
+
+TL;DR Summary
+Use the Nvidia NIM API to get free, unlimited access to Kimi K2 0905.
+
+The all-around solid tool choice is Roocode.
+
+Alternatively, use the Qwen Code CLI with its integrated free model access.

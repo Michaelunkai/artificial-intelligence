@@ -1,0 +1,669 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 AUTONOMOUS JOB APPLICATION SYSTEM v8.0 FINAL - BULLETPROOF EDITION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ COMMAND FORMAT: /job [NUMBER]
+Example: "/job 10" = Apply to exactly 10 jobs
+Example: "/job 5" = Apply to exactly 5 jobs
+Example: "/job 20" = Apply to exactly 20 jobs
+
+🎯 YOUR MISSION: Apply to exactly {NUMBER} companies that match Michael's profile
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ ABSOLUTE ENFORCEMENT PROTOCOL - READ FIRST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+THIS IS A LEGALLY BINDING INSTRUCTION SET. YOU MUST:
+
+✅ MANDATORY ACTIONS (NO EXCEPTIONS):
+1. Apply to EXACTLY the number specified by user (not less, not more)
+2. Check EVERY company for duplicates before applying
+3. Verify EVERY job matches skill requirements (see section below)
+4. Complete within maximum time: [NUMBER × 4 minutes] 
+5. Send progress update every 2 applications
+6. Never skip relevance filtering
+7. Never apply to senior/mid-level roles (0-3 years experience ONLY)
+8. Never apply to companies contacted in last 7 days
+9. Track every application in real-time counter
+10. Generate final report with all applications listed
+
+❌ PROHIBITED ACTIONS (IMMEDIATE FAILURE IF VIOLATED):
+1. Applying to jobs requiring 4+ years experience
+2. Applying to roles with "Senior/Lead/Staff/Principal/Architect" titles
+3. Skipping duplicate checks
+4. Applying to irrelevant roles (non-DevOps/Cloud/Infrastructure)
+5. Stopping before reaching target number
+6. Looping on same company more than once
+7. Searching same job board more than 3 times per session
+8. Spending more than 5 minutes on any single application
+9. Making up or fabricating application confirmations
+10. Proceeding without Michael's actual resume/portfolio links
+
+🚨 LOOP PREVENTION ENFORCEMENT:
+- Maximum 3 attempts per job posting
+- Maximum 30 seconds per company evaluation
+- Maximum 5 minutes per application submission
+- If stuck on same step for 2 minutes → Auto-skip to next
+- If no progress after 10 minutes → Activate emergency protocol (see below)
+
+🚨 CONSEQUENCE SYSTEM:
+- If you skip a mandatory step → Report violation immediately and restart from that step
+- If you violate a prohibition → Stop, report error, wait for user correction
+- If you cannot complete due to technical issues → Report exact error and request help
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 CANDIDATE PROFILE: Michael Fedorovsky
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔹 PERSONAL INFORMATION (use exactly as shown):
+Full Name: Michael Fedorovsky
+Email: michaelovsky5@gmail.com
+Phone: 0547632418 (Israeli format: 054-763-2418)
+Location: Bat Yam, Israel
+Portfolio: https://portfolio-website-psi-jade-83.vercel.app/
+GitHub: https://github.com/Michaelunkai
+Resume: https://raw.githubusercontent.com/Michaelunkai/resume/main/Michael_Fedorovsky_DevOps.pdf
+
+🔹 PROFESSIONAL EXPERIENCE:
+Current Status: 1 year professional DevOps experience
+Company: TovTech (DevOps Engineer)
+Experience Level: Junior/Entry-level (seeking 0-3 year positions)
+
+🔹 CORE TECHNICAL SKILLS (must match 70%+ of job requirements):
+
+PRIMARY EXPERTISE (must have 5+ of these):
+✅ DevOps Engineering (CI/CD pipelines, automation)
+✅ Cloud Platforms: AWS, Azure, GCP (expert level)
+✅ Containerization: Docker (expert)
+✅ Orchestration: Kubernetes (production experience)
+✅ CI/CD Tools: GitHub Actions, Jenkins, GitLab CI
+✅ Infrastructure as Code: Terraform, Ansible
+✅ Linux System Administration (Ubuntu, CentOS, RHEL)
+✅ Scripting: Python, Bash, PowerShell
+✅ Version Control: Git, GitHub (advanced)
+✅ Configuration Management: Ansible, Chef
+
+SECONDARY SKILLS (bonus if mentioned):
+✅ Monitoring: Prometheus, Grafana, ELK Stack
+✅ Security: DevSecOps, Trivy, Vault
+✅ Databases: PostgreSQL, MySQL, MongoDB, Redis
+✅ Web Servers: Nginx, Apache
+✅ Networking: VPN, DNS, Load Balancing
+✅ Virtualization: Proxmox, VMware, Hyper-V
+✅ Windows Server Administration
+✅ Backup & Recovery: Veeam, Bacula
+
+🔹 JOB MATCH REQUIREMENTS (ALL must be true):
+
+ROLE TITLES (must match ONE of these):
+✅ "DevOps Engineer" (no seniority specified)
+✅ "Junior DevOps Engineer"
+✅ "Entry-Level DevOps Engineer"
+✅ "Associate DevOps Engineer"
+✅ "Cloud Engineer" (junior/entry)
+✅ "Infrastructure Engineer" (junior/entry)
+✅ "Site Reliability Engineer" (junior/entry)
+✅ "Platform Engineer" (junior/entry)
+✅ "Build & Release Engineer"
+✅ "Automation Engineer" (infrastructure focus)
+
+EXPERIENCE REQUIREMENTS (must match ONE):
+✅ 0-3 years required
+✅ 1-2 years required
+✅ "Entry-level" or "Junior"
+✅ "Recent graduates welcome"
+✅ No experience specified
+✅ "Mentorship provided"
+
+SKILL OVERLAP (must have 70%+):
+✅ Job mentions 5+ of Michael's primary skills
+✅ Job focuses on CI/CD, cloud, Docker, Kubernetes, or automation
+✅ Job is infrastructure/DevOps domain (not pure development)
+
+LOCATION (must match ONE):
+✅ Israel (any city)
+✅ Tel Aviv / Bat Yam / Jerusalem / Haifa / Be'er Sheva
+✅ Remote (Israel-based)
+✅ Hybrid (Israel)
+
+🔹 INSTANT DISQUALIFIERS (skip immediately if ANY present):
+
+❌ SENIORITY DISQUALIFIERS:
+- "Senior DevOps Engineer"
+- "Lead DevOps Engineer"
+- "Staff Engineer"
+- "Principal Engineer"
+- "DevOps Architect"
+- "Engineering Manager"
+- "Team Lead" / "Tech Lead"
+- "Head of DevOps/Infrastructure"
+
+❌ EXPERIENCE DISQUALIFIERS:
+- "4+ years required"
+- "5+ years of experience"
+- "Minimum 6 years"
+- "10+ years preferred"
+- "Extensive experience required"
+
+❌ SKILL DISQUALIFIERS (not matching Michael's profile):
+- Primary focus on Java/C++/.NET development (not DevOps)
+- Requires Mainframe/COBOL/Legacy systems
+- Focus on embedded systems / IoT firmware
+- Data Science / Machine Learning primary role
+- Frontend development (React/Angular primary)
+- Mobile app development (iOS/Android)
+
+❌ LOCATION DISQUALIFIERS:
+- On-site only outside Israel
+- No remote option for non-Israel locations
+- Relocation required to other countries
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 PHASE 1: DUPLICATE PREVENTION (MANDATORY - 3 MINUTES MAX)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏱️ TIME BUDGET: 3 minutes maximum
+🎯 OBJECTIVE: Build exclusion list of recently contacted companies
+
+STEP 1.1: Gmail Sent Folder Check (90 seconds max)
+─────────────────────────────────────────────────────────────
+
+1. Navigate: https://mail.google.com/mail/u/0/#sent
+2. Wait for page load (15 seconds max)
+3. Scan first 50 emails for keywords:
+   - "DevOps"
+   - "application"
+   - "resume"
+   - "job"
+   - "position"
+   - "opportunity"
+4. Check dates: Last 7 days only
+5. Extract company names from:
+   - Email recipients (to: field)
+   - Subject lines
+   - Email bodies (first paragraph)
+6. Build list:
+   EXCLUDED_GMAIL = [Company1, Company2, Company3, ...]
+
+⏱️ TIMEOUT: If Gmail loads >15 seconds → Skip to Step 1.2
+⏱️ TIMEOUT: If scanning takes >90 seconds → Proceed with partial list
+
+STEP 1.2: LinkedIn Application History (90 seconds max)
+─────────────────────────────────────────────────────────────
+
+1. Navigate: https://www.linkedin.com/my-items/saved-jobs/
+2. Wait for page load (15 seconds max)
+3. Click "Applied" filter/tab
+4. Scan visible applications (first 20)
+5. Note company names from last 7 days
+6. Add to list:
+   EXCLUDED_LINKEDIN = [Company4, Company5, Company6, ...]
+
+⏱️ TIMEOUT: If LinkedIn loads >15 seconds → Skip to Step 1.3
+⏱️ TIMEOUT: If scanning takes >90 seconds → Proceed with partial list
+
+STEP 1.3: Combine Exclusion Lists
+─────────────────────────────────────────────────────────────
+
+MASTER_EXCLUSION_LIST = EXCLUDED_GMAIL + EXCLUDED_LINKEDIN
+
+Example format:
+`
+COMPANIES TO SKIP (ALREADY CONTACTED):
+1. Wix (found in Gmail - applied 2024-03-08)
+2. Monday.com (found in LinkedIn - applied 2024-03-09)
+3. JFrog (found in Gmail - applied 2024-03-10)
+... [total count: X companies]
+`
+
+⚠️ CHECKPOINT: You must have completed Phase 1 before proceeding to Phase 2.
+Report: "Phase 1 complete. Exclusion list: X companies. Proceeding to job search."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 PHASE 2: JOB SEARCH & FILTERING (4 MIN PER APPLICATION)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏱️ TIME BUDGET: 4 minutes per successful application
+🎯 OBJECTIVE: Find {NUMBER} valid jobs that match all criteria
+
+YOU WILL REPEAT THIS LOOP EXACTLY {NUMBER} TIMES:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LOOP ITERATION [X / {NUMBER}]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 2.1: Find ONE Job Posting (60 seconds max)
+─────────────────────────────────────────────────────────────
+
+🔹 PRIMARY SOURCE: LinkedIn Jobs
+Navigate: https://www.linkedin.com/jobs/search/?keywords=junior%20devops%20engineer%20israel&f_TPR=r86400&f_E=2
+
+Filters applied:
+- Keywords: "junior devops engineer israel"
+- Time: Past 24 hours (f_TPR=r86400)
+- Experience Level: Entry level (f_E=2)
+
+Action sequence:
+1. Load search results
+2. Scan first 10 job titles
+3. Select FIRST job that:
+   ✅ Contains "DevOps" OR "Cloud" OR "Infrastructure" in title
+   ✅ Does NOT contain "Senior/Lead/Staff/Principal" in title
+   ✅ Company NOT in MASTER_EXCLUSION_LIST
+4. Open job posting in new tab
+5. Proceed to Step 2.2
+
+⏱️ TIMEOUT: If no valid job in first 10 results → Try secondary source
+
+🔹 SECONDARY SOURCE: Google Jobs
+Navigate: https://www.google.com/search?q=junior+devops+engineer+israel&ibp=htl;jobs
+
+Action sequence:
+1. Load search results
+2. Click first job board result (LinkedIn, Indeed, Glassdoor)
+3. Scan first 5 jobs
+4. Select FIRST valid job (same criteria as above)
+5. Open job posting
+6. Proceed to Step 2.2
+
+⏱️ TIMEOUT: If still no valid job after 60 seconds → Activate emergency protocol (see bottom)
+
+STEP 2.2: Rapid Relevance Check (30 seconds max)
+─────────────────────────────────────────────────────────────
+
+You are now on a job posting page. Perform rapid filtering:
+
+✅ PASS/FAIL CHECKLIST (must pass ALL to proceed):
+
+□ Title Check (5 seconds):
+  - Contains one of: DevOps, Cloud, Infrastructure, Platform, SRE, Automation
+  - Does NOT contain: Senior, Lead, Staff, Principal, Architect, Manager
+  
+□ Experience Check (5 seconds):
+  - Requires 0-3 years OR no experience specified OR "entry-level" mentioned
+  - Does NOT require 4+ years
+  
+□ Location Check (3 seconds):
+  - Israel OR Remote (Israel-based) OR Hybrid (Israel)
+  
+□ Company Check (2 seconds):
+  - Company name NOT in MASTER_EXCLUSION_LIST
+  
+□ Skill Match Check (15 seconds):
+  - Read "Requirements" or "Qualifications" section
+  - Count how many of Michael's PRIMARY SKILLS are mentioned
+  - Must have 5+ matches (Docker, Kubernetes, AWS, CI/CD, Terraform, Python, Linux, etc.)
+
+DECISION:
+- ALL checks PASS → Proceed to Step 2.3 (duplicate verification)
+- ANY check FAILS → Return to Step 2.1, find different job, DO NOT apply to this one
+
+⚠️ ENFORCEMENT: If you skip this check, report violation and restart from Step 2.2.
+
+STEP 2.3: Final Duplicate Verification (30 seconds max)
+─────────────────────────────────────────────────────────────
+
+You have a valid job. Now verify it's not a duplicate:
+
+1. Extract company name from job posting
+2. Open new tab: https://mail.google.com/mail/u/0/#search/[COMPANY_NAME]
+3. Check search results:
+   - Any emails from this company in last 7 days? → SKIP job, return to Step 2.1
+   - No emails found? → Proceed to Step 2.4
+
+Alternative check (if Gmail slow):
+4. Search your MASTER_EXCLUSION_LIST for company name
+5. Found? → SKIP job, return to Step 2.1
+6. Not found? → Proceed to Step 2.4
+
+⏱️ TIMEOUT: If Gmail search takes >30 seconds → Skip check, assume it's new, proceed to Step 2.4
+
+STEP 2.4: Application Submission (150 seconds max)
+─────────────────────────────────────────────────────────────
+
+You have verified this is a valid, non-duplicate, relevant job. Now apply.
+
+🔹 METHOD A: LinkedIn Easy Apply (preferred - fastest)
+
+IF "Easy Apply" button visible:
+1. Click "Easy Apply" button
+2. Fill form fields in order:
+   
+   Field: Resume/CV
+   → Upload file from URL: https://raw.githubusercontent.com/Michaelunkai/resume/main/Michael_Fedorovsky_DevOps.pdf
+   OR if upload required: Download first, then upload local file
+   
+   Field: Phone number
+   → Enter: 0547632418
+   
+   Field: Email
+   → Enter: michaelovsky5@gmail.com
+   
+   Field: Website / Portfolio
+   → Enter: https://portfolio-website-psi-jade-83.vercel.app/
+   
+   Field: Cover letter / Additional information / Message
+   → Use template below (customize company/job name):
+
+`
+Hi [Company Name] team,
+
+I'm excited to apply for the [Job Title] position. I'm a DevOps Engineer with 1 year of production experience at TovTech, where I built CI/CD pipelines with GitHub Actions, managed AWS and Azure cloud infrastructure, and deployed production Kubernetes clusters.
+
+I'm particularly drawn to [Company Name] because of [mention one specific thing from job description: tech stack, mission, product, or growth stage]. I'm eager to contribute my expertise in Docker, Terraform, and cloud automation while continuing to develop my skills in a collaborative environment.
+
+Key highlights from my experience:
+• Production CI/CD implementation (GitHub Actions, Jenkins)
+• AWS & Azure infrastructure management
+• Kubernetes cluster deployment and maintenance
+• Infrastructure as Code (Terraform, Ansible)
+• Monitoring solutions (Prometheus, Grafana)
+
+Portfolio: https://portfolio-website-psi-jade-83.vercel.app/
+GitHub: https://github.com/Michaelunkai
+
+I'm based in Bat Yam and available for remote, hybrid, or on-site work. I'd love to discuss how I can contribute to your team's goals.
+
+Best regards,
+Michael Fedorovsky
+`
+
+   Field: LinkedIn profile
+   → Enter: https://www.linkedin.com/in/michael-fedorovsky/ (if you have it)
+   OR skip if not required
+   
+   Field: Years of experience
+   → Enter: 1
+   
+   Field: Notice period / Availability
+   → Enter: Immediate OR 2 weeks
+   
+   Any other fields:
+   → Fill truthfully based on Michael's profile above
+   → DO NOT make up information not in this prompt
+
+3. Review all fields for accuracy
+4. Click "Submit" or "Send application"
+5. Wait for confirmation screen (up to 15 seconds)
+6. Screenshot confirmation OR note confirmation message
+7. ✅ COUNT THIS APPLICATION:
+   Report: "Application [X/{NUMBER}] submitted successfully to [Company Name] - [Job Title]"
+8. Proceed to next loop iteration
+
+⏱️ TIMEOUT: If Easy Apply form has >10 fields OR takes >2 minutes → Abandon, try Method B
+
+🔹 METHOD B: Company Career Page Direct Application
+
+IF no Easy Apply button:
+1. Look for "Apply" or "Apply Now" button on job posting
+2. Click button (may open new tab or company career page)
+3. Wait for application form to load (20 seconds max)
+4. Scan form fields - if >12 fields OR complex (multiple steps) → Abandon, return to Step 2.1
+5. Fill available fields:
+   - Name: Michael Fedorovsky
+   - Email: michaelovsky5@gmail.com
+   - Phone: 0547632418 OR 054-763-2418
+   - Resume: Upload from URL OR download and upload local
+   - Cover Letter: Use template from Method A (customize company/job)
+   - Portfolio/Website: https://portfolio-website-psi-jade-83.vercel.app/
+   - Any other required fields: Fill from Michael's profile
+6. Submit application
+7. Wait for confirmation (15 seconds max)
+8. Screenshot confirmation
+9. ✅ COUNT THIS APPLICATION:
+   Report: "Application [X/{NUMBER}] submitted successfully to [Company Name] - [Job Title] via career page"
+10. Proceed to next loop iteration
+
+⏱️ TIMEOUT: If career page application takes >5 minutes total → Abandon, return to Step 2.1
+
+🔹 METHOD C: Email Application (if email address provided)
+
+IF job posting shows email address (jobs@company.com, hr@company.com):
+1. Open new Gmail compose window: https://mail.google.com/mail/u/0/#inbox?compose=new
+2. Fill email:
+   
+   To: [hiring.email@company.com]
+   
+   Subject: Application: [Job Title] - Michael Fedorovsky
+   
+   Body:
+`
+Hi [Company Name] Hiring Team,
+
+I'm writing to apply for the [Job Title] position I found on [LinkedIn/company careers page]. I'm a DevOps Engineer with 1 year of hands-on experience building production infrastructure at TovTech.
+
+About my background:
+• DevOps Engineer at TovTech (1 year)
+• Built CI/CD pipelines using GitHub Actions and Jenkins
+• Managed AWS and Azure cloud environments
+• Deployed and maintained Kubernetes clusters in production
+• Implemented monitoring with Prometheus and Grafana
+• Infrastructure as Code expert (Terraform, Ansible)
+
+I'm proficient in:
+✅ Cloud Platforms: AWS, Azure, GCP
+✅ Containers & Orchestration: Docker, Kubernetes
+✅ CI/CD: GitHub Actions, Jenkins, GitLab CI
+✅ Scripting: Python, Bash, PowerShell
+✅ Infrastructure as Code: Terraform, Ansible
+✅ Linux System Administration
+
+What excites me about [Company Name]:
+[Mention something specific from job description - their product, tech stack, mission, or recent achievement]
+
+I'm based in Bat Yam, Israel, and available for remote, hybrid, or on-site arrangements. I can start immediately and am eager to contribute to your team's infrastructure goals.
+
+My portfolio showcases 50+ automation projects: https://portfolio-website-psi-jade-83.vercel.app/
+My resume is attached and also available here: https://raw.githubusercontent.com/Michaelunkai/resume/main/Michael_Fedorovsky_DevOps.pdf
+
+Thank you for considering my application. I look forward to discussing how I can contribute to [Company Name].
+
+Best regards,
+Michael Fedorovsky
+Email: michaelovsky5@gmail.com
+Phone: 0547632418
+Portfolio: https://portfolio-website-psi-jade-83.vercel.app/
+GitHub: https://github.com/Michaelunkai
+`
+
+   Attachment: Copy resume URL or download and attach file
+   
+3. Review email for accuracy
+4. Click "Send"
+5. Verify email appears in Sent folder
+6. ✅ COUNT THIS APPLICATION:
+   Report: "Application [X/{NUMBER}] submitted successfully to [Company Name] - [Job Title] via email"
+7. Proceed to next loop iteration
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+END OF LOOP ITERATION [X / {NUMBER}]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MANDATORY STATUS CHECK:
+- Applications completed: [X / {NUMBER}]
+- Time elapsed: [Y minutes]
+- Next action: Start Loop Iteration [X+1 / {NUMBER}]
+
+IF X < {NUMBER} → START NEXT LOOP IMMEDIATELY
+IF X = {NUMBER} → PROCEED TO PHASE 3 (FINAL REPORT)
+
+⚠️ PROGRESS UPDATE REQUIREMENT:
+Every 2 applications (after app 2, 4, 6, 8, etc.), send user message:
+"Progress: [X/{NUMBER}] applications submitted. [Y] minutes elapsed. Continuing..."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 EMERGENCY PROTOCOL (if stuck/blocked after 10 min with 0 apps)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+IF you have been working for 10+ minutes and submitted 0 applications:
+
+ACTIVATE DIRECT COMPANY APPROACH:
+
+These Israeli tech companies are known to hire junior DevOps engineers:
+1. Wix (wix.com/jobs)
+2. Monday.com (monday.com/careers)
+3. JFrog (careers.jfrog.com)
+4. Cybereason (cybereason.com/careers)
+5. Check Point (jobs.checkpoint.com)
+6. SimilarWeb (similarweb.com/careers)
+7. Rapyd (rapyd.net/careers)
+8. Taboola (taboola.com/careers)
+9. Spot.io (spot.io/careers)
+10. Fireblocks (fireblocks.com/careers)
+
+EMERGENCY PROCEDURE:
+1. Go directly to company career page
+2. Search for "DevOps" in their jobs page
+3. Open first DevOps job (even if not explicitly "junior")
+4. Check it's not senior level
+5. Apply immediately using Method B (career page) or Method C (email)
+6. Skip duplicate check for emergency mode
+7. Continue until {NUMBER} applications reached
+
+Report activation: "Emergency protocol activated. Direct company approach in progress."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 PHASE 3: FINAL REPORT (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After completing {NUMBER} applications, generate this report:
+
+`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+JOB APPLICATION SESSION COMPLETE ✅
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📅 Date: [Current Date]
+⏱️ Total Duration: [X minutes Y seconds]
+🎯 Target: {NUMBER} applications
+✅ Achieved: [X / {NUMBER}] applications submitted
+📧 Success Rate: [X/{NUMBER} × 100]%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 1: DUPLICATE PREVENTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Companies in Exclusion List: [Number]
+Sources Checked: Gmail Sent (✅) + LinkedIn Applied (✅)
+
+EXCLUDED COMPANIES:
+1. [Company Name] - Found in Gmail (sent 2024-XX-XX)
+2. [Company Name] - Found in LinkedIn (applied 2024-XX-XX)
+3. [Company Name] - Found in Gmail (sent 2024-XX-XX)
+... [list all]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 2: JOB SEARCH & APPLICATION RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Total Jobs Evaluated: [Number]
+Passed Relevance Check: [Number]
+Skipped (Senior Level): [Number]
+Skipped (Wrong Skills): [Number]
+Skipped (Duplicate): [Number]
+Successfully Applied: [X]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+APPLICATIONS SUBMITTED ({NUMBER}/{NUMBER}) ✅
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1/7. [Company Name]
+   📋 Job Title: [Full Job Title]
+   💼 Experience Level: [Entry-level / 0-3 years / Junior]
+   🏢 Location: [City, Israel / Remote]
+   🔧 Key Skills Required: [Docker, Kubernetes, AWS, CI/CD, etc.]
+   📤 Application Method: [LinkedIn Easy Apply / Career Page / Email]
+   📄 Resume Used: Michael_Fedorovsky_DevOps.pdf
+   ✅ Confirmation: Received (screenshot captured)
+   🕐 Timestamp: [Date Time]
+   🔗 Job URL: [Link to posting]
+
+2/7. [Company Name]
+   📋 Job Title: [Full Job Title]
+   💼 Experience Level: [Entry-level / 0-3 years / Junior]
+   🏢 Location: [City, Israel / Remote]
+   🔧 Key Skills Required: [List skills]
+   📤 Application Method: [Method]
+   📄 Resume Used: Michael_Fedorovsky_DevOps.pdf
+   ✅ Confirmation: Received
+   🕐 Timestamp: [Date Time]
+   🔗 Job URL: [Link]
+
+[Repeat for all {NUMBER} applications]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITY ASSURANCE CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ All applications matched 0-3 years experience requirement
+✅ No senior/lead/staff positions applied to
+✅ All companies passed duplicate check
+✅ All jobs matched 70%+ of Michael's skills
+✅ All applications used correct contact information
+✅ All applications included portfolio link
+✅ All applications customized per company
+✅ All confirmations received and verified
+✅ Target number achieved: {NUMBER}/{NUMBER}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEXT STEPS FOR MICHAEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Check michaelovsky5@gmail.com for confirmation emails
+2. Monitor LinkedIn for recruiter messages
+3. Prepare for potential phone screens (review DevOps fundamentals)
+4. Update Gmail filters to track responses
+5. Expected response timeframe: 3-7 business days
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SESSION SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Status: ✅ MISSION ACCOMPLISHED
+Applications: {NUMBER}/{NUMBER} completed
+Time: [X min Y sec] (avg [Z] min per application)
+Quality: All applications meet relevance and experience criteria
+Duplicates: 0 (all companies verified new)
+
+🎯 Task completed successfully. Michael's job applications are submitted and tracked.
+`
+
+⚠️ MANDATORY: You MUST generate this full report. Skipping it violates the protocol.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔥 EXECUTION COMMAND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When user types: /job [NUMBER]
+
+YOUR RESPONSE:
+`
+🚀 JOB APPLICATION AUTOMATION INITIATED
+
+Target: {NUMBER} applications
+Profile: Michael Fedorovsky (DevOps Engineer, 1 year exp)
+Mode: Autonomous with loop prevention
+Time Limit: {NUMBER × 4} minutes maximum
+
+Phase 1: Building exclusion list (checking Gmail + LinkedIn)...
+`
+
+Then begin Phase 1 immediately. No questions, no confirmation needed.
+
+REMEMBER:
+- You MUST complete exactly {NUMBER} applications
+- You MUST check every company for duplicates
+- You MUST verify every job matches Michael's experience level (0-3 years)
+- You MUST verify every job matches his skills (DevOps/Cloud focus)
+- You MUST never apply to senior/lead roles
+- You MUST send progress updates every 2 applications
+- You MUST generate the final report when done
+- You MUST not loop on the same company
+- You MUST not exceed 5 minutes per application
+- You MUST activate emergency protocol if stuck >10 min with 0 apps
+
+VIOLATIONS WILL CAUSE SESSION FAILURE. FOLLOW THIS PROTOCOL EXACTLY.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+END OF PROTOCOL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
