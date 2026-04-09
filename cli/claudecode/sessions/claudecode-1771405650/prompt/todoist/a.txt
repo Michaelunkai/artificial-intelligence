@@ -1,0 +1,1 @@
+  Summarize all project work done this session to Todoist task "sum DD MM YY" (use today's date). Keep existing description, append new summary below it. Format: single line starting with * under 60 words, human-readable, boss-friendly - focus on what was accomplished on servers/infrastructure, skip internal file updates. API token: 2c95242afc4457bd1ad3395b6f77da1e6d3dadde

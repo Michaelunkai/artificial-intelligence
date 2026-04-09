@@ -1,0 +1,76 @@
+Category,Specification,Haiku 4.5,Sonnet 4.5,Opus 4.5
+Basic Info,Model ID,claude-haiku-4-5-20251001,claude-sonnet-4-5-20250929,claude-opus-4-5-20251101
+Basic Info,Release Date,October 1 2025,September 29 2025,November 1 2025
+Basic Info,Positioning,Fastest with near-frontier intelligence,Best balance for agents & coding,Maximum intelligence with practical performance
+Basic Info,Description,Speed-optimized for real-time & volume,Smartest for complex tasks,Premium model with highest capability
+Performance,Response Latency,Fastest (<200ms small prompts),Fast,Moderate
+Performance,Speed vs Sonnet,2-3× faster,Baseline,Slower
+Performance,MMLU Benchmark,75-78%,85-88%,90%+
+Performance,SWE-bench Verified,~35%,49.9%,55%+
+Performance,TAU-bench (Agentic),~55%,69.2%,75%+
+Performance,HumanEval (Coding),~82%,92%,95%+
+Performance,MATH Benchmark,~65%,78%,85%+
+Performance,GSM8K (Grade School Math),~88%,95%,97%+
+Performance,Overall Intelligence,Good,Excellent,Best
+Technical,Context Window,200K tokens,200K tokens (1M beta available),200K tokens
+Technical,Max Output Tokens,64K,64K,64K
+Technical,Extended Thinking,✓ Yes (first Haiku),✓ Yes,✓ Yes
+Technical,Priority Tier Support,✓ Yes,✓ Yes,✓ Yes
+Technical,Effort Parameter,✗ No,✗ No,✓ Yes (low/medium/high)
+Technical,Memory Tool (Beta),✓ Yes,✓ Yes,✓ Yes
+Technical,Programmatic Tool Call,✓ Yes,✓ Yes,✓ Yes
+Technical,Tool Search,✓ Yes,✓ Yes,✓ Yes
+Technical,Computer Use,Limited,Enhanced,Enhanced with zoom
+Technical,1M Context Beta,✗ No,✓ Yes,✗ No
+Knowledge,Reliable Knowledge Cutoff,February 2025,January 2025,January 2025 (some sources: March)
+Knowledge,Training Data Through,July 2025,July 2025,August 2025
+Pricing,Input Tokens (per 1M),$ 1.00,$ 3.00,$ 5.00
+Pricing,Output Tokens (per 1M),$ 5.00,$ 15.00,$ 25.00
+Pricing,Input per 1K tokens,$ 0.001,$ 0.003,$ 0.005
+Pricing,Output per 1K tokens,$ 0.005,$ 0.015,$ 0.025
+Pricing,Cost vs Sonnet,3× cheaper,Baseline,1.67× more expensive
+Pricing,vs Previous Generation,New tier,Similar,67% cheaper (was $15/$75)
+Pricing,Example: 1M input + 100K output,$ 1.50,$ 4.50,$ 7.50
+Pricing,Example: 10M daily interactions (500 tok avg),$ 25/day,$ 75/day,$ 125/day
+Pricing,Cost Efficiency Rating,Best (high volume),Balanced,Premium (worth it)
+Use Cases,Customer Support Chatbots,✓✓✓ Excellent,✓✓ Good,✓ Overkill
+Use Cases,Real-time Agents,✓✓✓ Excellent,✓✓ Good,✓ Overkill
+Use Cases,Bulk Document Processing,✓✓✓ Excellent,✓✓ Good,✓ Expensive
+Use Cases,Content Moderation,✓✓✓ Excellent,✓✓ Good,✓ Overkill
+Use Cases,Simple Code Generation,✓✓✓ Fast & cheap,✓✓ Better quality,✓ Overkill
+Use Cases,Data Extraction/Classification,✓✓✓ Excellent,✓✓ Good,✓ Overkill
+Use Cases,Software Development,✓✓ Basic tasks,✓✓✓ Excellent,✓✓ Complex only
+Use Cases,Code Review/Refactoring,✓ Limited,✓✓✓ Excellent,✓✓ Very complex
+Use Cases,Technical Writing,✓✓ Good,✓✓✓ Excellent,✓✓ Publication quality
+Use Cases,Data Analysis,✓✓ Basic,✓✓✓ Excellent,✓✓ Deep insights
+Use Cases,Research & Summarization,✓✓ Good,✓✓✓ Excellent,✓✓ Novel topics
+Use Cases,Complex Agents,✓ Limited,✓✓✓ Excellent,✓✓✓ Multi-step
+Use Cases,Educational Content,✓✓ Good,✓✓✓ Excellent,✓✓ Advanced topics
+Use Cases,Software Architecture,✗ Inadequate,✓✓ Good,✓✓✓ Excellent
+Use Cases,Debugging Complex Problems,✗ Inadequate,✓✓ Most cases,✓✓✓ Novel issues
+Use Cases,Deep Reasoning Tasks,✗ Inadequate,✓✓ Good,✓✓✓ Excellent
+Use Cases,Critical System Code,✗ Risky,✓✓ With review,✓✓✓ Best choice
+Use Cases,Advanced Computer Use,✗ Limited,✓✓ Good,✓✓✓ Full features
+Availability,Claude API,✓ Available,✓ Available,✓ Available
+Availability,Amazon Bedrock,✓ Available,✓ Available,✓ Available
+Availability,Google Vertex AI,✓ Available,✓ Available,✓ Available
+Availability,Claude Max (Pro),✓ Available,✓ Available,✓ Available
+Claude Max,Quota Pool,Shared with Opus,Separate dedicated pool,Shared with Haiku
+Claude Max,Strategic Use,Volume tasks,Preserve for routine work,Complex tasks only
+Safety,Safety Framework,Constitutional AI v2,Constitutional AI v2,Constitutional AI v2
+Safety,Prompt Injection Resistance,~5% success rate,~5% success rate,~5% success rate
+Safety,Jailbreak Resistance,Enhanced,Enhanced,Enhanced
+Safety,Hallucination Reduction,Improved,Improved,Improved
+Safety,Thinking Blocks Available,✓ Yes,✓ Yes,✓ Yes
+Comparison,vs GPT-5.1-Codex-Max,Faster & cheaper,More capable,More capable
+Comparison,vs Gemini 3 Pro,Faster,Competitive,More capable
+Comparison,vs o3-mini,Similar tier,Better reasoning,Much better
+Comparison,vs o3,Much cheaper,Cheaper,Competitive
+Best For,Primary Strength,Speed & volume,Balance & versatility,Intelligence & accuracy
+Best For,Ideal User,High-volume apps,General developers,Research & complex systems
+Best For,Avoid When,Complex reasoning needed,Need absolute best OR high volume,Budget constrained OR simple tasks
+Best For,Token Optimization,Use for 80% of simple tasks,Use for 80% of standard work,Use for 20% of hard problems
+Recommendation,When Unsure,Good for testing,✓ START HERE,Upgrade if Sonnet struggles
+Recommendation,Production Strategy,Scale endpoints here,Primary workhorse,Critical paths only
+Recommendation,Cost Optimization,Max this usage first,Balance quality/cost,Minimize usage
+Recommendation,Claude Max Strategy,Quick queries,Main model (separate quota),Complex reasoning only

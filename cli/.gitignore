@@ -1,0 +1,4 @@
+
+# Auto-excluded files with secrets
+Gemini/gemini-api-key-rotator-proxy-server/api_keys.txt
+Gemini/gemini-api-key-rotator-proxy-server/a.ps1

@@ -1,0 +1,2 @@
+﻿# resclau - Restore Claude Code settings to balanced defaults
+. 'F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\Claude\ModelMgmt\Set-ClaudeResource.ps1' -Model 'claude-sonnet-4-6' -Thinking $true -ThinkingBudget 10000 -MaxOutputTokens 16384 -BashTimeout 120000 -BashMaxTimeout 300000 -McpTimeout 30000 -CompactThreshold 0.3 -CompactBudget 2000 -Label 'Restored defaults [Sonnet balanced]' -Color Green

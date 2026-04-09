@@ -1,0 +1,1 @@
+. 'F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\Claude\ModelMgmt\Set-ClaudeResource.ps1' -Model 'claude-opus-4-6' -Thinking $true -ThinkingBudget 35169 -MaxOutputTokens 46653 -BashTimeout 250169 -BashMaxTimeout 500339 -McpTimeout 47119 -CompactThreshold 0.537 -CompactBudget 6881 -EffortLevel 'medium' -Label 'claude317 [Opus] (medium)' -Color Magenta

@@ -1,0 +1,4 @@
+{"created_at_ms":1775608385419,"session_id":"session-1775608385419-0","type":"session_meta","updated_at_ms":1775608386503,"version":1}
+{"text":"what is 2+2?","timestamp_ms":1775608385654,"type":"prompt_history"}
+{"message":{"blocks":[{"text":"what is 2+2?","type":"text"}],"role":"user"},"type":"message"}
+{"message":{"blocks":[{"text":"2 + 2 = 4\n\nThis is a basic arithmetic operation. Two plus two equals four.","type":"text"}],"role":"assistant","usage":{"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"input_tokens":8591,"output_tokens":27}},"type":"message"}

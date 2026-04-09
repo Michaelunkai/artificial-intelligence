@@ -1,0 +1,9 @@
+﻿Thumbs.db
+.DS_Store
+**/nul
+**/.git
+**/mem-agent-mcp/
+
+# Files >100MB (excluded by gitit - GitHub limit)
+wrappers/ClawdBot/B/ClawdBotManager.exe
+wrappers/ClawdBot/B/BULLETPROOF/ClawdBotManager.exe

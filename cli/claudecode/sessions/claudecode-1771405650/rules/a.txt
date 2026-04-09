@@ -1,0 +1,14 @@
+- PowerShell v5 syntax - use semicolons (;) not double-ampersand (&&) for command chaining
+- Use mcp-ondemand.ps1 for dynamic MCP server loading - verify servers with mcps command and run mcp-on or mcp-off to use the mcps that you need for the tasks
+- always read all md files in the folder! 
+- 100% autonomous operation - background tasks auto-run without prompts, complete tasks fully with test verification
+- Fix root causes, not symptoms - trace dependencies before edits, never suppress errors with as any or @ts-ignore
+- Prefer editing existing files over creating new ones - never write new files unless explicitly requested
+- Run lsp_diagnostics on all changed files before completion
+- Verify with tests before marking any task complete - ensure all tests pass
+- Real-time progress updates - mark [x] on completion of each step
+- Log all errors to .claude/learned.md for future reference
+- Clean up after operations - purge non-essential files, cancel background tasks before final answer
+- Document all changes and fixes - update/create agents.md or architecture.md on infrastructure changes
+- Create clear, descriptive commit messages when explicitly requested
+- STOP HOOK: Smart hook that only blocks when there are uncommitted changes AND build/test failures. Allows stop freely for Q&A, research, and clean projects. Override with: `New-Item -Path "$env:TEMP\claude_task_complete" -Force`

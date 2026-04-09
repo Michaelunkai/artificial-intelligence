@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "projectId": "Claw-Code Automated Setup",
+  "progress": {
+    "overallPercent": 59,
+    "completed": 47,
+    "active": 0,
+    "pending": 33,
+    "total": 80
+  },
+  "missions": [
+    {
+      "name": "OpenClaw Ollama Provider Migration",
+      "total": 50,
+      "completed": 46,
+      "active": 0,
+      "pending": 4
+    },
+    {
+      "name": "Claw-Code Automated Setup",
+      "total": 30,
+      "completed": 1,
+      "active": 0,
+      "pending": 29
+    }
+  ],
+  "steps": [
+    {
+      "mission": "OpenClaw Ollama Provider Migration",
+      "total": 46,
+      "completed": 46,
+      "pending": 0
+    },
+    {
+      "mission": "Claw-Code Automated Setup",
+      "total": 29,
+      "completed": 1,
+      "pending": 29
+    }
+  ]
+}

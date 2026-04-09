@@ -1,0 +1,130 @@
+# Windows 11 Comprehensive System Health Check & Optimization
+
+## My Request
+
+I need help performing a thorough system health check and optimization on my Windows 11 machine. I'm experiencing some stability issues and want to proactively fix problems before they cause crashes.
+
+## What I Want You To Do
+
+Please create a detailed TODO list with 30-50 steps that systematically diagnoses and fixes issues across my system. Work through each step methodically, showing me what you find and what you're fixing.
+
+## Safety Requirements
+
+Before ANY potentially risky operation:
+1. Create a System Restore point first
+2. Verify the change is reversible
+3. Skip anything that could affect boot stability
+4. Never force-stop critical Windows services
+5. Never modify drivers without confirmation
+6. Test with -WhatIf where PowerShell supports it
+
+## Areas to Check
+
+### Event Logs (Last 7 Days)
+- Application, System, Security logs for errors/warnings/critical events
+- Crash dumps, BSODs, application hangs, service failures
+- PowerShell and Windows Defender operational logs
+
+### Windows Services Health
+- Check for stopped/crashed/misconfigured services
+- Key services: Windows Update, BITS, DNS Client, WMI, Audio, Print Spooler
+- Docker/WSL related: HNS, vmcompute
+- Verify service dependencies are healthy
+
+### Disk & Storage
+- SMART status via `Get-PhysicalDisk` and `wmic diskdrive`
+- NTFS integrity (read-only chkdsk scan)
+- SSD TRIM status, disk space on all volumes
+- Check for disk controller errors in event logs
+
+### Network Stack
+- TCP/IP configuration health
+- Winsock catalog integrity
+- DNS resolver and cache status
+- Network adapter driver errors
+- HNS/Docker networking issues if applicable
+
+### Memory & Performance
+- Page fault rates, committed memory vs limit
+- Pagefile configuration
+- Check for memory pressure events
+- High memory consumers
+
+### Drivers
+- Check for driver crashes/timeouts in event logs
+- Unsigned or problematic drivers via `driverquery`
+- Graphics driver stability (TDR events)
+- Storage controller driver health
+
+### Windows Components
+- Run `sfc /scannow` 
+- Run `DISM /Online /Cleanup-Image /CheckHealth`
+- Component store health
+- Windows Update status and failed updates
+
+### Startup & Scheduled Tasks
+- Startup programs causing delays
+- Failed scheduled tasks
+- Boot time analysis
+
+### Power & Performance Settings
+- Current power plan optimization
+- CPU throttling/thermal issues
+- USB selective suspend problems
+- DPC latency check
+
+### WSL/Docker (If Installed)
+- WSL2 configuration and health
+- Docker daemon status
+- Virtual switch configuration
+
+### Security Baseline
+- Windows Defender status
+- Firewall configuration
+- Secure Boot status
+
+## Output Format
+
+Create a TODO list like this:
+```
+## System Health TODO List - [Date]
+
+### Phase 1: Safety & Baseline
+[ ] 1. Create System Restore point "Pre-Optimization-YYYYMMDD"
+[ ] 2. Capture current error counts as baseline
+...
+
+### Phase 2: Critical Issues
+[ ] 10. Fix: [specific issue found]
+...
+
+### Phase 3: High Priority
+...
+
+### Phase 4: Medium Priority  
+...
+
+### Phase 5: Verification
+[ ] 45. Re-run diagnostics
+[ ] 46. Compare before/after error counts
+...
+```
+
+Mark each step:
+- `[x]` = Completed and verified
+- `[ ]` = Pending
+- `[!]` = Skipped (explain why)
+- `[~]` = Partially completed
+
+## Technical Notes
+
+- Use PowerShell 5.1 syntax (semicolons for command chaining, not &&)
+- Stream progress as you work through each step
+- If a command fails, troubleshoot and try alternatives
+- Document what you find and what you change
+
+## Let's Begin
+
+Start by creating a System Restore point, then run the diagnostic scans to identify all issues. Build the TODO list based on what you actually find, prioritized by severity. Then work through the fixes systematically.
+
+I'll be monitoring your progress. If you encounter something truly risky that you're unsure about, flag it and we can discuss - but for standard diagnostic and repair operations, proceed confidently.

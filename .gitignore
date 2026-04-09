@@ -1,0 +1,9 @@
+
+# Auto-excluded files with secrets
+MCP/claudecode/b.backup..ps1
+MCP/claudecode/GLOBAL_RULE_MCP_ONDEMAND.txt
+MCP/claudecode/b.backup.2025-12-02.ps1
+
+# Auto-excluded files with secrets
+cli/Gemini/gemini-api-key-rotator-proxy-server/a.ps1
+cli/Gemini/gemini-api-key-rotator-proxy-server/api_keys.txt

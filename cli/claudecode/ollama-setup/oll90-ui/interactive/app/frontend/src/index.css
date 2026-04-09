@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-terminal-bg: #0a0a0a;
+  --color-terminal-surface: #111111;
+  --color-terminal-border: #1e1e1e;
+  --color-terminal-muted: #3a3a3a;
+  --color-terminal-text: #d4d4d4;
+  --color-terminal-cyan: #22d3ee;
+  --color-terminal-green: #22c55e;
+  --color-terminal-red: #ef4444;
+  --color-terminal-yellow: #eab308;
+  --color-terminal-magenta: #c084fc;
+  --font-family-mono: 'Cascadia Code', 'Consolas', 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-terminal-bg);
+  color: var(--color-terminal-text);
+  font-family: var(--font-family-mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-terminal-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-terminal-muted); border-radius: 3px; }
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.cursor-blink { animation: blink 1s step-end infinite; }
+.spinner { animation: spin 1s linear infinite; }
+
+pre, code { font-family: var(--font-family-mono); }

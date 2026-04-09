@@ -1,0 +1,1 @@
+. 'F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\Claude\ModelMgmt\Set-ClaudeResource.ps1' -Model 'claude-sonnet-4-6' -Thinking $true -ThinkingBudget 15712 -MaxOutputTokens 21435 -BashTimeout 116949 -BashMaxTimeout 233898 -McpTimeout 32797 -CompactThreshold 0.558 -CompactBudget 5085 -EffortLevel 'medium' -Label 'claude195 [Sonnet] (medium)' -Color Yellow

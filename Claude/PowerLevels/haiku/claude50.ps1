@@ -1,0 +1,1 @@
+. 'F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\Claude\ModelMgmt\Set-ClaudeResource.ps1' -Model 'claude-haiku-4-5-20251001' -Thinking $false -ThinkingBudget 0 -MaxOutputTokens 53326 -BashTimeout 102203 -BashMaxTimeout 254237 -McpTimeout 50339 -CompactThreshold 0.235 -CompactBudget 6661 -EffortLevel 'medium' -Label 'claude50 [Haiku] (medium)' -Color Cyan

@@ -1,0 +1,2 @@
+Invoke-WebRequest -Uri "https://github.com/deepworks-net/docker.claude-code/archive/main.zip" -OutFile "claude-docker.zip"; Expand-Archive -Path "claude-docker.zip" -DestinationPath .; Move-Item -Path "docker.claude-code-main" -Destination "claude-docker"; Remove-Item "claude-docker.zip"; Set-Location "claude-docker"; docker-compose up -d --build; docker-compose exec claude-code bash -c "claude"
+

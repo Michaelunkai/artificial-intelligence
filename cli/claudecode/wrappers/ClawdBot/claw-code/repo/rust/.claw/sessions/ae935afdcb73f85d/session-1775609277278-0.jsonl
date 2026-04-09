@@ -1,0 +1,4 @@
+{"created_at_ms":1775609277278,"session_id":"session-1775609277278-0","type":"session_meta","updated_at_ms":1775609279118,"version":1}
+{"text":"What is the capital of France?","timestamp_ms":1775609277513,"type":"prompt_history"}
+{"message":{"blocks":[{"text":"What is the capital of France?","type":"text"}],"role":"user"},"type":"message"}
+{"message":{"blocks":[{"text":"The capital of France is **Paris**. It's located in the north-central part of the country along the Seine River and is the largest city in France. Paris is known for its iconic landmarks like the Eiffel Tower, Notre-Dame Cathedral, the Louvre Museum, and is widely regarded as a global center for art, fashion, cuisine, and culture.","type":"text"}],"role":"assistant","usage":{"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"input_tokens":11803,"output_tokens":80}},"type":"message"}

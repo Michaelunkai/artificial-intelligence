@@ -1,0 +1,1 @@
+chieve in full only 1th most urget task in todo.md ,delete it from the file, than in 50-80 words explain what i did here... without changing codes or repos files!
