@@ -1,0 +1,58 @@
+=================================================================
+  ULTIMATE ONE-CLICK INSTALLER - FULLY AUTOMATIC
+=================================================================
+
+🎯 WHAT HAPPENS WHEN YOU RUN OpenClawInstaller.cmd:
+
+STEP 1: Installer runs automatically
+  ✓ Installs Node.js
+  ✓ Installs OpenClaw
+  ✓ Creates all config files
+
+STEP 2: Installer PAUSES and shows you:
+  
+  ┌─────────────────────────────────────────────────────────┐
+  │  TELEGRAM BOTS SETUP                                    │
+  │                                                         │
+  │  📱 HOW TO GET BOT TOKENS:                              │
+  │     1. Open Telegram app                                │
+  │     2. Search for: @BotFather                           │
+  │     3. Send message: /newbot                            │
+  │     4. Enter bot name (e.g., 'My Assistant 1')          │
+  │     5. Enter bot username (e.g., 'mybot1_bot')          │
+  │     6. Copy the TOKEN (looks like: 1234567890:ABCdef...)│
+  │     7. Come back here and paste it                      │
+  │     8. Repeat for bots 2, 3, 4                          │
+  │                                                         │
+  │  BOT 1 of 4                                             │
+  │  Paste Bot 1 token (or press Enter to skip):           │
+  │  ▌                                                      │
+  └─────────────────────────────────────────────────────────┘
+
+STEP 3: You paste each token, installer validates it automatically
+
+STEP 4: Installer continues automatically
+  ✓ Saves all tokens to config
+  ✓ Creates 4 workspaces
+  ✓ Sets up system tray
+  ✓ Starts gateway
+  ✓ DONE!
+
+RESULT: Open Telegram → message your 4 bots → they respond instantly!
+
+=================================================================
+
+📋 COMPLETE FLOW:
+
+1. Double-click: OpenClawInstaller.cmd
+2. Wait 2 minutes (auto-install)
+3. See "TELEGRAM BOTS SETUP" screen
+4. Open Telegram → create 4 bots with @BotFather (2 minutes)
+5. Paste 4 tokens when prompted
+6. Wait 1 minute (auto-configure & start)
+7. Open Telegram → message bots → DONE!
+
+Total time: ~5 minutes
+Manual input: Only pasting 4 tokens (unavoidable - only Telegram can create them)
+
+=================================================================

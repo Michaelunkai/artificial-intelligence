@@ -1,0 +1,27 @@
+=================================================================
+  SETUP GUIDE - UNDER 100 WORDS
+=================================================================
+
+1. Double-click OpenClawInstaller.cmd
+
+2. Wait 2 minutes (auto-installs Node.js + OpenClaw)
+
+3. When prompted "Paste Bot 1 token":
+   - Open Telegram
+   - Message @BotFather
+   - Send: /newbot
+   - Name it, username it
+   - Copy token (1234567890:ABCdef...)
+   - Paste into installer
+
+4. Repeat for bots 2, 3, 4
+
+5. Installer auto-finishes (creates configs, starts gateway)
+
+6. Open Telegram, message your 4 bots
+
+DONE! Four AI assistants, each in separate chat, auto-starts on boot.
+
+Total time: 5 minutes.
+
+=================================================================

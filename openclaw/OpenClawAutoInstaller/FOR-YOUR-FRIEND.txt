@@ -1,0 +1,34 @@
+=================================================================
+  OPENCLAW SETUP - FOR YOUR FRIEND (NO SANDBOX)
+=================================================================
+
+🎯 COMPLETE SETUP FROM SCRATCH:
+
+1. Double-click OpenClawInstaller.cmd
+
+2. Enter Anthropic API key when asked (get from: console.anthropic.com)
+
+3. Wait 5-10 minutes (installs Node.js + OpenClaw automatically)
+
+4. Create Telegram bots:
+   - Open Telegram → message @BotFather
+   - Send: /newbot → name it → get token
+   - Repeat for each bot you want (bot1, bot2, etc.)
+
+5. Open: C:\Users\<YourName>\.openclaw\openclaw.json
+
+6. Find "telegram" section, set:
+   "enabled": true,
+   "botToken": "PASTE_YOUR_BOT_TOKEN_HERE"
+
+7. For multiple bots, add in "accounts":
+   "bot2": { "botToken": "SECOND_BOT_TOKEN", ... }
+
+8. Add bindings to map bots to agents:
+   { "agentId": "session2", "match": { "accountId": "bot2" }}
+
+9. Right-click OpenClaw tray icon → Restart Gateway
+
+10. Message your bots on Telegram → Done!
+
+=================================================================

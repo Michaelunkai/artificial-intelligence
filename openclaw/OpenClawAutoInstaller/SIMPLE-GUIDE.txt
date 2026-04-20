@@ -1,0 +1,25 @@
+=================================================================
+  4 TELEGRAM AI BOTS - 100 WORD GUIDE
+=================================================================
+
+1. Double-click OpenClawInstaller.cmd (wait 10 minutes)
+
+2. Open Telegram → message @BotFather → send /newbot four times → copy each token
+
+3. Open C:\Users\<YourName>\.openclaw\openclaw.json in Notepad
+
+4. Find "botToken": "TELEGRAM_BOT_TOKEN_1_HERE" (appears 4 times)
+
+5. Replace with your actual tokens (keep quotes)
+
+6. Save file
+
+7. Right-click green OpenClaw icon (bottom-right screen) → Restart Gateway
+
+8. Message your bots on Telegram
+
+Done! Four independent AI assistants, free models, auto-starts on boot.
+
+Optional: Add Anthropic API key for better AI (Claude).
+
+=================================================================

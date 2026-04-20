@@ -1,0 +1,2 @@
+Summarize all project work done this session missing nothing we did from very start to end, to Todoist task sum DD MM YY (with todays date !) in Documentation(job). Keep existing content, append below. Short human sentences, no fluff, boss-readable. API token: 2c95242afc4457bd1ad3395b6f77da1e6d3dadde, every task start with * of its own!
+

@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: openclaw-client-acquisition
+    env: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "465"
+      - key: MAX_DAILY_EMAILS
+        value: "50"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false

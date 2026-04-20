@@ -1,0 +1,162 @@
+=================================================================
+  OPENCLAW - FULLY AUTOMATIC ONE-CLICK INSTALLER
+=================================================================
+
+🎯 THE ONE-LINER YOU ASKED FOR:
+
+   Just double-click:  INSTALL.cmd
+
+   That's it. NOTHING else needed.
+
+=================================================================
+  WHAT HAPPENS AUTOMATICALLY
+=================================================================
+
+When you double-click INSTALL.cmd, it will:
+
+1. ✅ Check if Windows Sandbox is enabled
+   → If not: Enable it automatically (requires admin + restart)
+   → If yes: Continue
+
+2. ✅ Create isolated sandbox environment
+   → Completely safe - nothing touches your main system
+
+3. ✅ Launch Windows Sandbox with auto-run script
+   → Opens in new window automatically
+
+4. ✅ Inside the sandbox, it automatically:
+   → Installs Node.js v24 LTS
+   → Installs OpenClaw globally
+   → Creates full config structure
+   → Sets up system tray integration
+   → Configures auto-start on boot
+   → Installs Android Debug Bridge (ADB)
+   → Creates helper scripts
+   → Starts OpenClaw Gateway
+   → Runs 10 verification checks
+
+5. ✅ Shows you the entire installation process in real-time
+
+6. ✅ When you close the sandbox window:
+   → Everything is automatically discarded
+   → No cleanup needed
+   → Zero impact on main system
+
+=================================================================
+  ZERO INTERACTION REQUIRED
+=================================================================
+
+You literally just:
+1. Double-click INSTALL.cmd
+2. Watch it work
+3. Close sandbox when done
+
+That's it. No questions, no prompts, no configuration.
+
+If Windows Sandbox isn't enabled:
+- Script automatically enables it (as admin)
+- Asks you to restart computer (one-time only)
+- Run INSTALL.cmd again after restart → done
+
+=================================================================
+  WORKS ON ANY WINDOWS 11 MACHINE
+=================================================================
+
+✅ Brand new Windows 11 (zero apps installed)
+✅ Non-technical users (just double-click!)
+✅ Any Windows 11 edition (Home/Pro/Enterprise)
+
+Minimum requirements:
+- Windows 11
+- 4GB RAM
+- Internet connection
+
+=================================================================
+  100% SAFE TESTING
+=================================================================
+
+The sandbox is completely isolated:
+
+✅ No changes affect your main system
+✅ No files are modified outside the sandbox
+✅ Close window = everything vanishes
+✅ Test as many times as you want
+✅ Zero risk
+
+=================================================================
+  WHAT YOU'LL SEE
+=================================================================
+
+1. INSTALL.cmd launches → shows banner
+2. PowerShell window appears → checking sandbox
+3. If sandbox not enabled → auto-enables (needs admin)
+4. Sandbox window opens (takes 30-60 seconds to boot)
+5. Inside sandbox: PowerShell terminal auto-opens
+6. Installation runs step-by-step with progress
+7. Verification checks run at the end
+8. "Press any key to close" message
+9. You press key → sandbox closes → everything discarded
+
+=================================================================
+  IF YOU WANT TO INSTALL ON YOUR MAIN SYSTEM
+=================================================================
+
+After testing in sandbox, if you want it on your real machine:
+
+   Double-click:  OpenClawInstaller.cmd
+
+This runs the same installer but on your main system.
+You'll be prompted for your Anthropic API key.
+
+=================================================================
+  FILES IN THIS PACKAGE
+=================================================================
+
+🚀 INSTALL.cmd                    ← THE ONE YOU DOUBLE-CLICK
+   └─ AutoInstallInSandbox.ps1    ← Full automation script
+
+📦 OpenClawInstaller.cmd          ← Install on main system
+   └─ setup.ps1                   ← Core installer logic
+
+✅ verify-installation.ps1        ← Post-install verification
+
+📖 README.md                      ← Full documentation
+📖 SUMMARY.md                     ← Package overview
+📖 ONE-CLICK.txt                  ← This file
+
+=================================================================
+  CREDENTIALS & SECURITY
+=================================================================
+
+❌ NO credentials are included in this installer:
+   - No API keys
+   - No bot tokens
+   - No personal data
+   - No chat history
+
+✅ You provide your own Anthropic API key:
+   - During main system install (prompted)
+   - Or set manually later in environment variables
+
+=================================================================
+  TECHNICAL DETAILS (for transparency)
+=================================================================
+
+The installer:
+- Downloads Node.js from: nodejs.org (official)
+- Installs OpenClaw via: npm (npmjs.com)
+- Downloads ADB from: google.com (official)
+- All scripts are PowerShell (readable, auditable)
+- No compiled executables
+- No hidden code
+- Fully open source
+
+=================================================================
+
+⚡ READY TO GO?
+
+   Just double-click:  INSTALL.cmd
+
+   That's the one-liner you asked for.
+
+=================================================================

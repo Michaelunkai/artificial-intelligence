@@ -1,0 +1,1 @@
+docker rm -f lobechat; docker run -d --name lobechat -p 3002:3210 lobehub/lobe-chat:latest; Write-Host "LobeChat running at: http://localhost:3002" Access: http://localhost:3002 Note: You'll need to add your own API key in settings

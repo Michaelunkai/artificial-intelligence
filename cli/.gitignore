@@ -1,0 +1,17 @@
+﻿Thumbs.db
+.DS_Store
+**/nul
+**/.git
+**/mem-agent-mcp/
+
+# Auto-excluded large files (>49MB)
+claudecode/backup/data/full/full-20260323-194428/cloudflared.exe
+claudecode/backup/data/full/full-20260323-194428/.docker/bin/inference/ggml-vulkan.dll
+claudecode/backup/data/full/full-20260323-194428/.local/bin/uv.exe
+claudecode/backup/data/full/full-20260323-194428/.local/share/claude/versions/2.1.70
+claudecode/backup/data/full/full-20260323-194428/.ollama/OllamaSetup.exe
+claudecode/backup/data/full/full-20260323-194428/.ollama/models/blobs/sha256-58574f2e94b99fb9e4391408b57e5aeaaaec10f6384e9a699fc2cb43a5c8eabf
+
+# Auto-excluded files with secrets
+claudecode/backup/data/full/full-20260323-194428/.claude/plugins/marketplaces/claude-plugins-official/.claude-plugin/marketplace.json
+claudecode/backup/data/full/full-20260323-194428/.claude/projects/F--Downloads/a7547451-fea0-4664-9abc-36d36ea221c8/tool-results/bbodryrs3.txt

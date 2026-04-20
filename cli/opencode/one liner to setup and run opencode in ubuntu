@@ -1,0 +1,1 @@
+uz && curl -fsSL https://opencode.ai/install | bash && brc2 && opencode

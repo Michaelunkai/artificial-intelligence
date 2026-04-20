@@ -1,0 +1,74 @@
+{
+  "name": "agentflow",
+  "version": "1.0.0",
+  "description": "Multi-Agent AI Orchestration Platform - Dashboard for managing distributed AI agent workflows",
+  "author": "Till Thelet <michaelovsky22@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/Michaelunkai/agentflow",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Michaelunkai/agentflow"
+  },
+  "keywords": [
+    "openclaw",
+    "ai-agents",
+    "orchestration",
+    "automation",
+    "dashboard",
+    "task-queue",
+    "real-time",
+    "monitoring"
+  ],
+  "main": "index.js",
+  "openclaw": {
+    "minVersion": "0.50.0",
+    "permissions": [
+      "http",
+      "websocket",
+      "filesystem"
+    ],
+    "hooks": [
+      "gateway:startup",
+      "command:new"
+    ],
+    "routes": [
+      {
+        "path": "/agentflow",
+        "description": "Dashboard UI"
+      },
+      {
+        "path": "/agentflow/api/*",
+        "description": "REST API endpoints"
+      },
+      {
+        "path": "/agentflow/ws",
+        "description": "WebSocket endpoint"
+      }
+    ],
+    "tools": [],
+    "trayMenu": [
+      {
+        "label": "🤖 AgentFlow Dashboard",
+        "action": "open_url",
+        "url": "http://localhost:18789/agentflow"
+      },
+      {
+        "label": "🔄 Restart AgentFlow",
+        "action": "api_call",
+        "endpoint": "/agentflow/api/admin/reload",
+        "method": "POST"
+      }
+    ]
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.14.2",
+    "better-sqlite3": "^9.2.2",
+    "uuid": "^9.0.1"
+  },
+  "scripts": {
+    "start": "node standalone-server.js",
+    "install": "powershell -ExecutionPolicy Bypass -File install.ps1",
+    "seed": "node scripts/seed-data.js"
+  }
+}

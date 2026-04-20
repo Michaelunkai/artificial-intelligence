@@ -1,0 +1,37 @@
+=================================================================
+  OPENCLAW SETUP - COMPLETE BEGINNER GUIDE
+=================================================================
+
+🎯 FROM ZERO TO MULTIPLE TELEGRAM BOTS IN 10 STEPS:
+
+1. Double-click INSTALL.cmd → watch it install in Sandbox → close window
+
+2. Double-click OpenClawInstaller.cmd → enter your Anthropic API key when asked
+   Get key: https://console.anthropic.com/settings/keys
+
+3. Create Telegram bots (talk to @BotFather on Telegram):
+   - Send: /newbot
+   - Name it (e.g., "My Assistant Bot 1")
+   - Get bot token (looks like: 1234567890:ABCdefGHIjklMNOpqrsTUVwxyz)
+   - Repeat for bot 2, bot 3, etc.
+
+4. Open: C:\Users\<YourName>\.openclaw\openclaw.json in Notepad
+
+5. Find "telegram" section, change:
+   "enabled": true
+   "botToken": "PASTE_BOT_1_TOKEN_HERE"
+
+6. Add more bots in "accounts" section (copy-paste bot1 structure):
+   "bot2": { "botToken": "PASTE_BOT_2_TOKEN_HERE", ... }
+
+7. Add agent bindings (maps bots to agents):
+   { "agentId": "session2", "match": { "channel": "telegram", "accountId": "bot2" }}
+
+8. Right-click OpenClaw tray icon → Restart Gateway
+
+9. Message your bots on Telegram → each responds independently
+
+10. Done! Multiple AI assistants in different Telegram chats.
+
+Full config example in README.md
+=================================================================

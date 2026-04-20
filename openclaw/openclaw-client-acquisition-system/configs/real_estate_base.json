@@ -1,0 +1,92 @@
+{
+  "niche": "real_estate",
+  "version": "1.0.0",
+  "workflows": [
+    {
+      "id": "lead_capture",
+      "name": "Lead Capture & Nurture",
+      "description": "Capture buyer/seller leads and start automated nurture sequence",
+      "trigger": "form_submission",
+      "actions": [
+        {"type": "create_crm_contact"},
+        {"type": "send_welcome_email", "template": "lead_welcome"},
+        {"type": "start_drip_campaign", "campaign": "buyer_nurture"},
+        {"type": "notify_telegram", "message": "New lead: {{lead_name}}"}
+      ],
+      "enabled": true
+    },
+    {
+      "id": "showing_scheduler",
+      "name": "Property Showing Scheduler",
+      "description": "Automatically schedule showings based on agent availability",
+      "trigger": "showing_request",
+      "actions": [
+        {"type": "check_availability"},
+        {"type": "book_calendar_slot"},
+        {"type": "send_confirmation_email"},
+        {"type": "send_reminder_24h_before"}
+      ],
+      "enabled": true
+    },
+    {
+      "id": "listing_description",
+      "name": "AI Listing Description Generator",
+      "description": "Generate compelling property descriptions from key facts",
+      "trigger": "manual",
+      "actions": [
+        {"type": "collect_property_data"},
+        {"type": "generate_description", "ai_model": "real_estate_copy"},
+        {"type": "post_to_mls", "enabled": false}
+      ],
+      "enabled": true
+    },
+    {
+      "id": "market_report",
+      "name": "Weekly Market Report",
+      "description": "AI-generated market analysis sent to prospects weekly",
+      "trigger": "schedule",
+      "schedule": "weekly_monday_9am",
+      "actions": [
+        {"type": "fetch_market_data"},
+        {"type": "generate_report", "ai_model": "market_analyst"},
+        {"type": "send_to_subscriber_list"}
+      ],
+      "enabled": true
+    }
+  ],
+  "automations": [
+    {
+      "id": "crm_auto_update",
+      "name": "CRM Auto-Update",
+      "description": "Auto-logs calls, emails, and showings to the CRM",
+      "enabled": true
+    },
+    {
+      "id": "comparable_finder",
+      "name": "Comparable Property Finder",
+      "description": "AI finds and summarizes comparable sold properties",
+      "enabled": true
+    },
+    {
+      "id": "contract_reviewer",
+      "name": "Contract Review Assistant",
+      "description": "Flags unusual clauses and key terms in purchase agreements",
+      "enabled": false
+    }
+  ],
+  "telegram_notifications": true,
+  "notifications": {
+    "new_lead": true,
+    "showing_booked": true,
+    "offer_received": true,
+    "daily_summary": false,
+    "weekly_market_report": true
+  },
+  "integrations": {
+    "calendar": "google",
+    "crm": "follow_up_boss",
+    "document_storage": "google_drive",
+    "email": "gmail",
+    "mls": "none"
+  }
+}

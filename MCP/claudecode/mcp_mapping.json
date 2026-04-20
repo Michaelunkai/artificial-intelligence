@@ -1,0 +1,248 @@
+﻿{
+    "mappings":  {
+                     "figma":  [
+                                   "design",
+                                   "figma",
+                                   "mockup",
+                                   "ui",
+                                   "prototype"
+                               ],
+                     "deepwiki":  [
+                                      "documentation",
+                                      "wiki",
+                                      "docs",
+                                      "readme"
+                                  ],
+                     "everything":  [
+                                        "search files",
+                                        "find files",
+                                        "windows search",
+                                        "everything"
+                                    ],
+                     "tavily":  [
+                                    "tavily",
+                                    "tavily search",
+                                    "tavily crawl",
+                                    "tavily extract"
+                                ],
+                     "windows-mcp":  [
+                                         "windows",
+                                         "desktop",
+                                         "automation",
+                                         "ui control"
+                                     ],
+                     "sentry":  [
+                                    "sentry",
+                                    "error",
+                                    "errors",
+                                    "crash",
+                                    "bug tracking",
+                                    "monitoring",
+                                    "exception",
+                                    "issue tracking",
+                                    "stack trace",
+                                    "debug"
+                                ],
+                     "knowledge-graph":  [
+                                             "knowledge",
+                                             "graph",
+                                             "entities",
+                                             "relations"
+                                         ],
+                     "notion":  [
+                                    "notion",
+                                    "notes",
+                                    "workspace",
+                                    "pages"
+                                ],
+                     "gitlab":  [
+                                    "gitlab",
+                                    "ci",
+                                    "pipeline",
+                                    "merge request"
+                                ],
+                     "read-website-fast":  [
+                                               "read website",
+                                               "web content",
+                                               "fetch webpage"
+                                           ],
+                     "playwright":  [
+                                        "playwright",
+                                        "browser automation",
+                                        "web testing",
+                                        "e2e"
+                                    ],
+                     "deep-research":  [
+                                           "research",
+                                           "deep dive",
+                                           "investigate"
+                                       ],
+                     "mongodb":  [
+                                     "mongodb",
+                                     "mongo",
+                                     "nosql",
+                                     "document database"
+                                 ],
+                     "mcp-installer":  [
+                                           "install mcp",
+                                           "add server",
+                                           "mcp setup"
+                                       ],
+                     "sequential-thinking":  [
+                                                 "think",
+                                                 "reasoning",
+                                                 "analyze",
+                                                 "thought",
+                                                 "sequential"
+                                             ],
+                     "github":  [
+                                    "github",
+                                    "repo",
+                                    "repository",
+                                    "git",
+                                    "pull request",
+                                    "pr",
+                                    "issue",
+                                    "commit"
+                                ],
+                     "mcp-summarization":  [
+                                               "summarize",
+                                               "summary",
+                                               "tldr",
+                                               "condense"
+                                           ],
+                     "filesystem":  [
+                                        "file",
+                                        "directory",
+                                        "folder",
+                                        "read",
+                                        "write",
+                                        "edit",
+                                        "path",
+                                        "disk"
+                                    ],
+                     "fast-playwright":  [
+                                             "fast browser",
+                                             "quick playwright",
+                                             "speed test"
+                                         ],
+                     "youtube":  [
+                                     "youtube",
+                                     "video",
+                                     "transcript",
+                                     "subtitles"
+                                 ],
+                     "mcp-pyautogui":  [
+                                           "mouse",
+                                           "keyboard",
+                                           "gui automation",
+                                           "pyautogui"
+                                       ],
+                     "smart-crawler":  [
+                                           "crawl",
+                                           "spider",
+                                           "scrape multiple",
+                                           "site crawler"
+                                       ],
+                     "context7":  [
+                                      "library docs",
+                                      "api reference",
+                                      "package documentation"
+                                  ],
+                     "jira":  [
+                                  "jira",
+                                  "ticket",
+                                  "sprint",
+                                  "agile",
+                                  "issue tracking"
+                              ],
+                     "memory":  [
+                                    "remember",
+                                    "memory",
+                                    "recall",
+                                    "note",
+                                    "knowledge graph"
+                                ],
+                     "docker":  [
+                                    "docker",
+                                    "container",
+                                    "dockerfile",
+                                    "compose"
+                                ],
+                     "zapier":  [
+                                    "zapier",
+                                    "zap",
+                                    "automation",
+                                    "integrate",
+                                    "workflow",
+                                    "connect apps",
+                                    "slack",
+                                    "message",
+                                    "channel",
+                                    "team chat",
+                                    "dm",
+                                    "direct message",
+                                    "lilah",
+                                    "lilach",
+                                    "slackbot",
+                                    "gmail",
+                                    "email",
+                                    "send email",
+                                    "inbox"
+                                ],
+                     "graphql":  [
+                                     "graphql",
+                                     "gql",
+                                     "graph query"
+                                 ],
+                     "brave-search":  [
+                                          "brave",
+                                          "search engine",
+                                          "privacy search"
+                                      ],
+                     "todoist":  [
+                                     "todoist",
+                                     "todo",
+                                     "task",
+                                     "tasks",
+                                     "task list",
+                                     "project management",
+                                     "to-do",
+                                     "checklist",
+                                     "reminder"
+                                 ],
+                     "firecrawl":  [
+                                       "firecrawl",
+                                       "deep scrape",
+                                       "website extraction"
+                                   ],
+                     "exa":  [
+                                 "web search",
+                                 "search web",
+                                 "exa",
+                                 "find online"
+                             ],
+                     "google-maps":  [
+                                         "maps",
+                                         "location",
+                                         "address",
+                                         "directions",
+                                         "geocode"
+                                     ],
+                     "puppeteer":  [
+                                       "browser",
+                                       "puppeteer",
+                                       "scrape",
+                                       "screenshot",
+                                       "navigate",
+                                       "webpage"
+                                   ],
+                     "postgres":  [
+                                      "database",
+                                      "sql",
+                                      "postgres",
+                                      "query",
+                                      "postgresql"
+                                  ]
+                 }
+}

@@ -1,0 +1,5 @@
+﻿<#
+.SYNOPSIS
+    claudemax
+#>
+claude30

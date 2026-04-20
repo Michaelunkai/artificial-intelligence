@@ -1,0 +1,1 @@
+@echo off && for /f "delims=" %%i in ('cd') do set "REPO_NAME=%%~nxi" && if not exist ".git" (git init && gh repo create "%REPO_NAME%" --private --source=. --remote=origin --push) && git add . && git commit -m "Auto commit from %REPO_NAME%" && git push origin main 2>nul || git push origin master 2>nul || git push -u origin main

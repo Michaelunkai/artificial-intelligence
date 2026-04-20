@@ -1,0 +1,40 @@
+﻿Thumbs.db
+.DS_Store
+**/nul
+**/.git
+**/mem-agent-mcp/
+
+# Files >=100MB excluded by gitit (GitHub limit)
+cli/claudecode/wrappers/ClawdBot/B/ClawdBotManager.exe
+cli/claudecode/wrappers/ClawdBot/B/BULLETPROOF/ClawdBotManager.exe
+
+# Auto-excluded large files (>49MB)
+cli/claudecode/wrappers/ClawdBot/B/publish/ClawdBotManager.exe
+
+# Auto-excluded files with secrets
+MCP/claudecode/GLOBAL_RULE_MCP_ONDEMAND.txt
+MCP/claudecode/b.backup..ps1
+MCP/claudecode/b.backup.2025-12-02.ps1
+
+# Auto-excluded large files (>49MB)
+cli/claudecode/backup/data/full/full-20260323-194428/cloudflared.exe
+cli/claudecode/backup/data/full/full-20260323-194428/.docker/bin/inference/ggml-vulkan.dll
+cli/claudecode/backup/data/full/full-20260323-194428/.local/bin/uv.exe
+cli/claudecode/backup/data/full/full-20260323-194428/.local/share/claude/versions/2.1.70
+cli/claudecode/backup/data/full/full-20260323-194428/.ollama/OllamaSetup.exe
+cli/claudecode/backup/data/full/full-20260323-194428/.ollama/models/blobs/sha256-58574f2e94b99fb9e4391408b57e5aeaaaec10f6384e9a699fc2cb43a5c8eabf
+
+# Auto-excluded files with secrets
+cli/claudecode/backup/data/full/full-20260323-194428/.claude/plugins/marketplaces/claude-plugins-official/.claude-plugin/marketplace.json
+cli/claudecode/backup/data/full/full-20260323-194428/.claude/projects/F--Downloads/a7547451-fea0-4664-9abc-36d36ea221c8/tool-results/bbodryrs3.txt
+
+# Auto-excluded (caught during push)
+cli/claudecode/backup/data/full/full-20260323-194428/.claude/projects/C--users-micha--openclaw/ae385072-0e39-4185-9aea-f3747a3a4e9f.jsonl
+cli/claudecode/backup/data/full/full-20260323-194428/.claude/projects/F--Downloads/449cfc89-28c1-4add-ae28-d5af0dd1adc9.jsonl
+cli/claudecode/backup/data/full/full-20260323-194428/.claude/projects/F--Downloads/449cfc89-28c1-4add-ae28-d5af0dd1adc9/subagents/agent-aside_question-30931a2d4167c127.jsonl
+
+# Auto-excluded (caught during push)
+cli/claudecode/backup/data/full/full-20260323-194428/.claude/projects/C--users-micha--openclaw/ff7aecf2-3d57-4765-b2a3-efa7f75ca91b.jsonl
+
+# Auto-excluded (caught during push)
+cli/claudecode/backup/data/full/full-20260323-194428/.claude/projects/C--users-micha--openclaw/ad41d192-dec9-4165-9da2-7fb604ea815c.jsonl

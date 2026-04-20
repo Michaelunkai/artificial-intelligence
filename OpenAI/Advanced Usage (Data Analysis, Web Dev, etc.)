@@ -1,0 +1,19 @@
+Advanced Usage (Data Analysis, Web Dev, etc.)
+You can also:
+
+Upload a CSV and ask to analyze it (GPT-4 with code interpreter).
+
+Ask it to write a Flask app or REST API.
+
+Request SQL queries from natural-language prompts.
+
+Reverse engineer obfuscated or hard-to-read code.
+
+🧰 Tip: Use ChatGPT Tools for Maximum Power
+To unlock the full Codex features:
+
+Use ChatGPT Pro and choose GPT-4-turbo.
+
+Make sure "Code Interpreter" or "Python" tools are enabled (Settings → Beta features).
+
+Use files (upload CSVs, images, or JSON) for deeper analysis.

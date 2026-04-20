@@ -1,0 +1,1 @@
+docker rm -f openwebui; docker run -d --name openwebui -p 3003:8080 -v openwebui_data:/app/backend/data ghcr.io/open-webui/open-webui:main; Write-Host "Open-WebUI running at: http://localhost:3003" Access: http://localhost:3003 Note: Large download (~1GB), takes 5-10 minutes first time

@@ -1,0 +1,1 @@
+Stop-Process -Name electron,node,vite -Force -ErrorAction SilentlyContinue; Start-Job -ScriptBlock { Set-Location 'F:\Downloads\agent-cowork'; npm run dev:react }; Start-Sleep -Seconds 3; Start-Job -ScriptBlock { Set-Location 'F:\Downloads\agent-cowork'; npm run dev:electron }

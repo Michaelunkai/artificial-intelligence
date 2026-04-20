@@ -1,0 +1,1 @@
+venv && curl -sS https://bootstrap.pypa.io/get-pip.py | python3 && pip install claude-max --break-system-packages &&  pip install aiofiles &&  claude_max "hello"

@@ -1,0 +1,2 @@
+reduce claude.md + everything in .claude much possible to reduce total conext in this project, without removing any needed or usfull data for future sessions!!!
+

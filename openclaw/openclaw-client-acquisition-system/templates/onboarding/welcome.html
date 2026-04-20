@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome to OpenClaw!</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #553c9a 0%, #6b46c1 100%); padding: 40px 40px 30px; color: #fff; text-align: center; }
+    .header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 700; }
+    .header p { margin: 0; opacity: 0.9; font-size: 16px; }
+    .emoji-big { font-size: 48px; display: block; margin-bottom: 16px; }
+    .body { padding: 36px 40px; color: #2d3748; line-height: 1.7; }
+    .body h2 { color: #553c9a; font-size: 20px; margin-top: 0; }
+    .step-list { list-style: none; padding: 0; margin: 20px 0; counter-reset: steps; }
+    .step-list li { padding: 12px 0 12px 44px; position: relative; border-bottom: 1px solid #edf2f7; counter-increment: steps; }
+    .step-list li:last-child { border-bottom: none; }
+    .step-list li::before { content: counter(steps); position: absolute; left: 0; top: 10px; background: #6b46c1; color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+    .highlight-box { background: #faf5ff; border-left: 4px solid #6b46c1; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 24px 0; }
+    .cta-button { display: inline-block; margin: 24px 0; padding: 14px 32px; background: linear-gradient(135deg, #6b46c1, #553c9a); color: #fff !important; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600; }
+    .footer { background: #f7fafc; padding: 20px 40px; text-align: center; font-size: 13px; color: #718096; border-top: 1px solid #e2e8f0; }
+    .signature { margin-top: 28px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #4a5568; }
+    .badge { display: inline-block; background: #6b46c1; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="emoji-big">🎉</span>
+      <h1>Welcome to OpenClaw!</h1>
+      <p>Your custom AI workspace is ready, {{business_name}}</p>
+    </div>
+    <div class="body">
+      <h2>Hi {{business_name}}, you're all set! 🚀</h2>
+      <p>
+        Thank you for signing up with <strong>OpenClaw</strong>. We've built a custom automation workspace specifically for your business in <strong>{{industry}}</strong>.
+      </p>
+
+      <div class="highlight-box">
+        <strong>📎 Your Custom Config is Attached</strong><br/>
+        The file <code>openclaw-config.json</code> attached to this email contains your personalized workspace settings. Keep it safe — it's your OpenClaw profile.
+      </div>
+
+      <h3 style="color: #553c9a;">🛠️ Getting Started in 3 Steps:</h3>
+      <ol class="step-list">
+        <li>
+          <strong>Install OpenClaw</strong><br/>
+          Download from <a href="https://openclaw.io/download" style="color: #6b46c1;">openclaw.io/download</a> and run the installer.
+        </li>
+        <li>
+          <strong>Import Your Config</strong><br/>
+          Open OpenClaw → Settings → Import Config → select the attached <code>openclaw-config.json</code> file.
+        </li>
+        <li>
+          <strong>Connect Your Tools</strong><br/>
+          Follow the setup wizard to connect your email, calendar, and any other tools you use daily.
+        </li>
+      </ol>
+
+      <p>
+        Once connected, your automations will start running immediately. Most clients save <strong>8–15 hours per week</strong> in their first month.
+      </p>
+
+      <a href="https://openclaw.io/docs/getting-started" class="cta-button">View Setup Documentation →</a>
+
+      <p>
+        Have questions? Reply to this email or book a live setup call with our team — we're here to make sure you succeed.
+      </p>
+
+      <a href="https://openclaw.io/book-call" style="color: #6b46c1; font-weight: 600;">📅 Book a Free Setup Call</a>
+
+      <div class="signature">
+        <strong>The OpenClaw Team</strong><br/>
+        <span class="badge">Setup Complete</span><br/><br/>
+        <a href="https://openclaw.io" style="color: #6b46c1;">openclaw.io</a> · 
+        <a href="mailto:support@openclaw.io" style="color: #6b46c1;">support@openclaw.io</a>
+      </div>
+    </div>
+    <div class="footer">
+      You're receiving this because you signed up at openclaw.io.<br/>
+      <a href="#" style="color: #718096;">Unsubscribe</a> · <a href="https://openclaw.io/privacy" style="color: #718096;">Privacy Policy</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,89 @@
+{
+  "niche": "insurance",
+  "version": "1.0.0",
+  "workflows": [
+    {
+      "id": "claims_intake",
+      "name": "Claims Intake & Triage",
+      "description": "Automatically receive, categorize, and route insurance claims",
+      "trigger": "form_submission",
+      "actions": [
+        {"type": "classify_claim", "ai_model": "claims_classifier"},
+        {"type": "assign_adjuster", "method": "round_robin"},
+        {"type": "send_acknowledgment_email"},
+        {"type": "notify_telegram", "message": "New claim: {{claim_id}}"}
+      ],
+      "enabled": true
+    },
+    {
+      "id": "renewal_reminders",
+      "name": "Policy Renewal Sequence",
+      "description": "Automated multi-step renewal reminder campaign",
+      "trigger": "schedule",
+      "schedule": "daily_9am",
+      "actions": [
+        {"type": "check_renewals", "days_before": [90, 60, 30, 14, 7]},
+        {"type": "send_renewal_email"},
+        {"type": "create_followup_task"}
+      ],
+      "enabled": true
+    },
+    {
+      "id": "client_onboarding",
+      "name": "New Client Onboarding",
+      "description": "Automated onboarding sequence for new policyholders",
+      "trigger": "policy_created",
+      "actions": [
+        {"type": "send_welcome_email", "template": "policyholder_welcome"},
+        {"type": "schedule_onboarding_call"},
+        {"type": "create_crm_contact"}
+      ],
+      "enabled": true
+    },
+    {
+      "id": "quote_assistant",
+      "name": "Quote Generation Assistant",
+      "description": "AI-assisted quote preparation from client data",
+      "trigger": "manual",
+      "actions": [
+        {"type": "fetch_client_data"},
+        {"type": "generate_quote", "ai_assist": true},
+        {"type": "send_quote_email"}
+      ],
+      "enabled": true
+    }
+  ],
+  "automations": [
+    {
+      "id": "email_classifier",
+      "name": "Insurance Email Classifier",
+      "description": "Routes emails to claims, renewals, or general inquiries",
+      "enabled": true
+    },
+    {
+      "id": "compliance_tracker",
+      "name": "Compliance & Expiry Tracker",
+      "description": "Monitors policy expirations and regulatory deadlines",
+      "enabled": true
+    },
+    {
+      "id": "fraud_flag",
+      "name": "Claims Anomaly Detector",
+      "description": "AI flags unusual patterns in claim submissions",
+      "enabled": false
+    }
+  ],
+  "telegram_notifications": true,
+  "notifications": {
+    "new_claim": true,
+    "renewal_due": true,
+    "new_policy": true,
+    "daily_summary": true
+  },
+  "integrations": {
+    "calendar": "google",
+    "crm": "salesforce",
+    "document_storage": "google_drive",
+    "email": "gmail"
+  }
+}

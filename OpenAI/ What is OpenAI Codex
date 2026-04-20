@@ -1,0 +1,23 @@
+Codex is an AI model by OpenAI specialized in understanding and generating code. It powers GitHub Copilot and enables natural language programming – meaning, you can write code by describing it in plain English.
+
+Codex:
+
+Understands over a dozen programming languages.
+
+Can write functions, debug code, explain code, and even generate complete scripts or apps.
+
+Is deeply integrated into ChatGPT (especially GPT-4-turbo) when you're using it with code interpreter / Python tool access.
+
+✅ What is Codex used for?
+Codex can:
+
+💻 Generate code from natural language instructions.
+
+🛠️ Help fix or debug code snippets.
+
+📜 Translate code between languages (e.g., Python → JavaScript).
+
+📦 Build full scripts, bots, or small apps based on descriptions.
+
+📈 Assist in data analysis, automation, web scraping, and more.
+

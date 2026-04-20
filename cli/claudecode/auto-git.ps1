@@ -1,0 +1,1 @@
+$REPO_NAME = Split-Path -Leaf (Get-Location); if (!(Test-Path ".git")) { git init; gh repo create $REPO_NAME --private --source=. --remote=origin --push }; git add .; git commit -m "Auto commit from $REPO_NAME"; git push origin main 2>$null; if ($LASTEXITCODE -ne 0) { git push origin master 2>$null }; if ($LASTEXITCODE -ne 0) { git push -u origin main }

@@ -1,0 +1,87 @@
+{
+  "niche": "law_firm",
+  "version": "1.0.0",
+  "workflows": [
+    {
+      "id": "client_intake",
+      "name": "Client Intake Form",
+      "description": "Automated intake form that qualifies leads and schedules consultations",
+      "trigger": "form_submission",
+      "actions": [
+        {"type": "send_confirmation_email", "template": "intake_confirmation"},
+        {"type": "create_calendar_event", "calendar": "consultations"},
+        {"type": "notify_telegram", "message": "New intake: {{client_name}}"}
+      ],
+      "enabled": true
+    },
+    {
+      "id": "document_automation",
+      "name": "Document Generator",
+      "description": "Generate contracts, briefs, and forms from templates",
+      "trigger": "manual",
+      "actions": [
+        {"type": "fill_template", "template_dir": "documents/"},
+        {"type": "send_for_signature", "provider": "docusign"}
+      ],
+      "enabled": true
+    },
+    {
+      "id": "deadline_reminders",
+      "name": "Filing Deadline Reminders",
+      "description": "Automated reminders for court deadlines and filing dates",
+      "trigger": "schedule",
+      "schedule": "daily_9am",
+      "actions": [
+        {"type": "check_deadlines", "lookahead_days": 7},
+        {"type": "send_reminder_email"},
+        {"type": "notify_telegram"}
+      ],
+      "enabled": true
+    },
+    {
+      "id": "client_followup",
+      "name": "Client Follow-up Sequence",
+      "description": "Automated follow-up emails after consultations",
+      "trigger": "calendar_event_end",
+      "delay_hours": 24,
+      "actions": [
+        {"type": "send_followup_email", "template": "post_consultation"},
+        {"type": "update_crm_status", "status": "contacted"}
+      ],
+      "enabled": true
+    }
+  ],
+  "automations": [
+    {
+      "id": "email_classification",
+      "name": "Incoming Email Classifier",
+      "description": "AI classifies and routes incoming emails by urgency and type",
+      "enabled": true
+    },
+    {
+      "id": "research_assistant",
+      "name": "Legal Research Summarizer",
+      "description": "Summarizes case law and statutes using AI",
+      "enabled": true
+    },
+    {
+      "id": "billing_tracker",
+      "name": "Time & Billing Tracker",
+      "description": "Automatically tracks billable time from calendar and emails",
+      "enabled": false
+    }
+  ],
+  "telegram_notifications": true,
+  "notifications": {
+    "new_lead": true,
+    "deadline_alert": true,
+    "email_reply": true,
+    "daily_summary": true
+  },
+  "integrations": {
+    "calendar": "google",
+    "crm": "hubspot",
+    "document_storage": "google_drive",
+    "email": "gmail"
+  }
+}

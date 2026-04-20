@@ -1,0 +1,29 @@
+Step 1: Describe What You Want
+Type a plain-English request:
+
+“Create a Python script that renames all files in a folder to include today’s date.”
+
+Codex (via GPT-4) will return working Python code like:
+
+python
+Copy code
+import os
+from datetime import datetime
+
+folder = "./my_files"
+date_str = datetime.now().strftime("%Y-%m-%d")
+
+for filename in os.listdir(folder):
+    old_path = os.path.join(folder, filename)
+    if os.path.isfile(old_path):
+        new_name = f"{date_str}_{filename}"
+        new_path = os.path.join(folder, new_name)
+        os.rename(old_path, new_path)
+
+print("Files renamed.")
+Step 2: Ask for Edits
+You can follow up:
+
+“Add error handling and log renamed files to a text file.”
+
+Codex adapts the code and improves it accordingly.

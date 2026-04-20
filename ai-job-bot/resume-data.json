@@ -1,0 +1,247 @@
+{
+  "personalInfo": {
+    "name": "Michael Fedorovsky (Till Thelet)",
+    "title": "DevOps Engineer | Cloud Architect | AI/ML Engineer",
+    "location": "Israel",
+    "email": "till.thelet@example.com",
+    "phone": "+972-XX-XXX-XXXX",
+    "linkedin": "linkedin.com/in/till-thelet",
+    "github": "github.com/Michaelunkai",
+    "website": "portfolio.tillthelet.com"
+  },
+
+  "summary": "Results-driven DevOps Engineer with 5+ years of experience in cloud infrastructure, Kubernetes orchestration, CI/CD automation, and AI/ML deployment. Expertise in Python, Go, Docker, Terraform, and AWS/Azure/GCP. Proven track record of building scalable, secure infrastructure and implementing cutting-edge AI solutions. Passionate about automation, security, and continuous improvement.",
+
+  "skills": {
+    "languages": [
+      "Python",
+      "Go",
+      "Bash",
+      "PowerShell",
+      "JavaScript",
+      "SQL"
+    ],
+    "cloud": [
+      "AWS (EC2, S3, Lambda, ECS, RDS, CloudFormation, CloudWatch)",
+      "Azure (VMs, AKS, Functions, Blob Storage, Monitor)",
+      "GCP (Compute Engine, Cloud Storage, BigQuery)",
+      "Terraform",
+      "CloudFormation",
+      "Pulumi"
+    ],
+    "containers": [
+      "Docker",
+      "Kubernetes (K8s, K3s, MicroK8s)",
+      "Helm",
+      "ArgoCD",
+      "Rancher",
+      "Container Security (Trivy, Grype, Falco)"
+    ],
+    "cicd": [
+      "GitHub Actions",
+      "GitLab CI/CD",
+      "Jenkins",
+      "CircleCI",
+      "Travis CI",
+      "Argo Workflows"
+    ],
+    "automation": [
+      "Ansible",
+      "Puppet",
+      "Chef",
+      "SaltStack",
+      "n8n",
+      "Zapier",
+      "Make (Integromat)"
+    ],
+    "monitoring": [
+      "Prometheus",
+      "Grafana",
+      "ELK Stack (Elasticsearch, Logstash, Kibana)",
+      "Datadog",
+      "New Relic",
+      "Sentry"
+    ],
+    "security": [
+      "HashiCorp Vault",
+      "Keycloak",
+      "OAuth2/OIDC",
+      "SAST/DAST (SonarQube, Snyk, Bandit)",
+      "Network Security (iptables, fail2ban, Snort)",
+      "Secrets Management",
+      "GDPR Compliance"
+    ],
+    "databases": [
+      "PostgreSQL",
+      "MySQL",
+      "MongoDB",
+      "Redis",
+      "Elasticsearch",
+      "DynamoDB"
+    ],
+    "aiml": [
+      "TensorFlow",
+      "PyTorch",
+      "scikit-learn",
+      "Hugging Face Transformers",
+      "OpenAI API (GPT-4, DALL-E)",
+      "LangChain",
+      "Vector Databases (Pinecone, Weaviate)",
+      "MLOps (MLflow, Kubeflow)"
+    ],
+    "web": [
+      "FastAPI",
+      "Django",
+      "Flask",
+      "React",
+      "Next.js",
+      "Node.js"
+    ],
+    "tools": [
+      "Git",
+      "Linux (Ubuntu, Debian, CentOS)",
+      "Windows Server",
+      "Nginx",
+      "Apache",
+      "VS Code",
+      "IntelliJ",
+      "Postman"
+    ]
+  },
+
+  "experience": [
+    {
+      "company": "TovTech / Histadrut",
+      "title": "Full Stack Developer",
+      "location": "Israel (Remote)",
+      "startDate": "2024-01",
+      "endDate": "Present",
+      "description": "Full-stack development for Histadrut job matching platform.",
+      "achievements": [
+        "Developed job scraping and matching algorithms for 1000+ jobs daily",
+        "Built Node.js/Express backend with PostgreSQL database",
+        "Implemented React frontend with real-time job updates",
+        "Deployed on cloud infrastructure with Docker + Kubernetes",
+        "Achieved 95% uptime and <200ms response times"
+      ]
+    },
+    {
+      "company": "Freelance / Personal Projects",
+      "title": "DevOps Engineer & AI Developer",
+      "location": "Remote",
+      "startDate": "2020-01",
+      "endDate": "Present",
+      "description": "Building automation tools, AI agents, and cloud infrastructure.",
+      "achievements": [
+        "Built AI-powered automation systems using n8n, OpenAI, and Python",
+        "Deployed 50+ Docker containers on self-hosted Kubernetes cluster",
+        "Automated infrastructure provisioning with Terraform and Ansible",
+        "Created CI/CD pipelines reducing deployment time by 80%",
+        "Implemented security scanning and vulnerability management",
+        "Built AI chatbots and LLM integrations using GPT-4 and LangChain"
+      ]
+    }
+  ],
+
+  "projects": [
+    {
+      "name": "AI Job Application Automation System",
+      "description": "n8n workflow that scrapes LinkedIn jobs, uses GPT-4 to filter relevance, and auto-generates custom resumes",
+      "technologies": ["n8n", "OpenAI GPT-4", "Apify", "Google Workspace", "Python"],
+      "url": "github.com/tillthelet/ai-job-bot"
+    },
+    {
+      "name": "Kubernetes Homelab Cluster",
+      "description": "Self-hosted K8s cluster running 50+ containerized services (media, automation, monitoring, databases)",
+      "technologies": ["Kubernetes", "Docker", "Helm", "ArgoCD", "Prometheus", "Grafana"],
+      "url": ""
+    },
+    {
+      "name": "DevOps Automation Toolkit",
+      "description": "Python/Bash scripts for infrastructure automation, backup, monitoring, and security scanning",
+      "technologies": ["Python", "Bash", "Ansible", "Terraform", "AWS CLI"],
+      "url": "github.com/tillthelet/devops-toolkit"
+    },
+    {
+      "name": "AI-Powered Code Assistant",
+      "description": "Custom AI agent using OpenAI API for code generation, debugging, and documentation",
+      "technologies": ["Python", "OpenAI API", "LangChain", "FastAPI"],
+      "url": ""
+    },
+    {
+      "name": "Container Security Scanner",
+      "description": "Automated Docker/K8s image scanning with Trivy, policy enforcement with OPA, runtime protection with Falco",
+      "technologies": ["Trivy", "OPA", "Falco", "Python", "Kubernetes"],
+      "url": ""
+    }
+  ],
+
+  "education": [
+    {
+      "degree": "Self-taught Developer & DevOps Engineer",
+      "institution": "Online Learning (Udemy, Coursera, YouTube, Documentation)",
+      "location": "Remote",
+      "graduationDate": "Ongoing",
+      "description": "Extensive hands-on learning through building real-world projects, reading documentation, and experimentation"
+    }
+  ],
+
+  "certifications": [
+    {
+      "name": "AWS Certified Solutions Architect (in progress)",
+      "issuer": "Amazon Web Services",
+      "date": "2026"
+    },
+    {
+      "name": "Certified Kubernetes Administrator (CKA) (in progress)",
+      "issuer": "Cloud Native Computing Foundation",
+      "date": "2026"
+    }
+  ],
+
+  "languages": [
+    {
+      "language": "English",
+      "proficiency": "Fluent"
+    },
+    {
+      "language": "Hebrew",
+      "proficiency": "Native"
+    },
+    {
+      "language": "Russian",
+      "proficiency": "Conversational"
+    }
+  ],
+
+  "interests": [
+    "AI & Machine Learning",
+    "Cloud Infrastructure",
+    "Automation & DevOps",
+    "Cybersecurity",
+    "Open Source Software",
+    "Gaming",
+    "Reading Tech Blogs"
+  ],
+
+  "jobPreferences": {
+    "titles": [
+      "DevOps Engineer",
+      "Site Reliability Engineer (SRE)",
+      "Cloud Engineer",
+      "Platform Engineer",
+      "AI/ML Engineer",
+      "Machine Learning Engineer",
+      "Backend Engineer",
+      "Full Stack Developer",
+      "Infrastructure Engineer",
+      "Automation Engineer"
+    ],
+    "remote": true,
+    "locations": ["Israel", "Remote (Worldwide)", "Tel Aviv", "Haifa", "Jerusalem"],
+    "salaryMin": 15000,
+    "salaryCurrency": "ILS",
+    "employmentType": ["Full-time", "Contract", "Freelance"],
+    "industries": ["Technology", "AI", "Cloud", "SaaS", "Fintech", "Cybersecurity", "Startup"]
+  }
+}

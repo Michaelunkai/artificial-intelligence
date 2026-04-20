@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentFlow - Insights Dashboard</title>
+  <link rel="stylesheet" href="/agentflow/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1>📊 AgentFlow Insights</h1>
+        <p class="subtitle">Outcome-based learning and recommendations</p>
+      </div>
+      <div class="header-right">
+        <a href="/agentflow" class="btn btn-secondary">← Back to Dashboard</a>
+      </div>
+    </header>
+
+    <!-- Insights Type Selector -->
+    <section class="section">
+      <div class="tabs">
+        <button class="tab active" data-type="job_application" onclick="selectInsightType('job_application')">
+          💼 Job Applications
+        </button>
+        <button class="tab" data-type="media_download" onclick="selectInsightType('media_download')">
+          🎮 Media Downloads
+        </button>
+        <button class="tab" data-type="browser_automation" onclick="selectInsightType('browser_automation')">
+          🌐 Browser Automation
+        </button>
+      </div>
+    </section>
+
+    <!-- Job Application Insights -->
+    <section class="section" id="jobInsights">
+      <h2>💼 Job Application Intelligence</h2>
+      
+      <div class="insights-grid">
+        <div class="insight-card primary">
+          <div class="insight-icon">📈</div>
+          <div class="insight-content">
+            <div class="insight-label">Response Rate</div>
+            <div class="insight-value" id="jobResponseRate">--%</div>
+            <div class="insight-detail" id="jobResponseDetail">Loading...</div>
+          </div>
+        </div>
+        
+        <div class="insight-card success">
+          <div class="insight-icon">⏰</div>
+          <div class="insight-content">
+            <div class="insight-label">Best Time to Apply</div>
+            <div class="insight-value" id="jobBestTime">--:--</div>
+            <div class="insight-detail" id="jobBestTimeDetail">Loading...</div>
+          </div>
+        </div>
+        
+        <div class="insight-card info">
+          <div class="insight-icon">🎯</div>
+          <div class="insight-content">
+            <div class="insight-label">Total Applications</div>
+            <div class="insight-value" id="jobTotalApps">--</div>
+            <div class="insight-detail" id="jobTotalDetail">Loading...</div>
+          </div>
+        </div>
+        
+        <div class="insight-card warning">
+          <div class="insight-icon">📬</div>
+          <div class="insight-content">
+            <div class="insight-label">Interviews Scheduled</div>
+            <div class="insight-value" id="jobInterviews">--</div>
+            <div class="insight-detail" id="jobInterviewDetail">Loading...</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recommendation -->
+      <div class="recommendation-box">
+        <h3>🤖 AI Recommendation</h3>
+        <p id="jobRecommendation">Analyzing your application patterns...</p>
+      </div>
+      
+      <!-- Top Keywords -->
+      <div class="insights-section">
+        <h3>🔑 Top Performing Keywords</h3>
+        <div id="keywordsChart" class="chart-container">
+          <div class="empty-state">No keyword data yet</div>
+        </div>
+      </div>
+      
+      <!-- Hourly Performance -->
+      <div class="insights-section">
+        <h3>📊 Response Rate by Hour of Day</h3>
+        <div id="hourlyChart" class="chart-container">
+          <div class="empty-state">Not enough data for hourly analysis</div>
+        </div>
+      </div>
+      
+      <!-- Recent Outcomes -->
+      <div class="insights-section">
+        <h3>📋 Recent Application Outcomes</h3>
+        <div id="recentOutcomes" class="outcome-list">
+          <div class="empty-state">No outcomes recorded yet</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Media Download Insights -->
+    <section class="section hidden" id="mediaInsights">
+      <h2>🎮 Media Download Intelligence</h2>
+      
+      <div class="insights-grid">
+        <div class="insight-card success">
+          <div class="insight-icon">✅</div>
+          <div class="insight-content">
+            <div class="insight-label">Success Rate</div>
+            <div class="insight-value" id="mediaSuccessRate">--%</div>
+            <div class="insight-detail">Downloads completed successfully</div>
+          </div>
+        </div>
+        
+        <div class="insight-card primary">
+          <div class="insight-icon">📁</div>
+          <div class="insight-content">
+            <div class="insight-label">Total Downloads</div>
+            <div class="insight-value" id="mediaTotalDownloads">--</div>
+            <div class="insight-detail">All time</div>
+          </div>
+        </div>
+        
+        <div class="insight-card info">
+          <div class="insight-icon">💾</div>
+          <div class="insight-content">
+            <div class="insight-label">Avg Size</div>
+            <div class="insight-value" id="mediaAvgSize">-- GB</div>
+            <div class="insight-detail">Per download</div>
+          </div>
+        </div>
+        
+        <div class="insight-card warning">
+          <div class="insight-icon">⚡</div>
+          <div class="insight-content">
+            <div class="insight-label">Avg Speed</div>
+            <div class="insight-value" id="mediaAvgSpeed">-- MB/s</div>
+            <div class="insight-detail">Download speed</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Browser Automation Insights -->
+    <section class="section hidden" id="browserInsights">
+      <h2>🌐 Browser Automation Intelligence</h2>
+      
+      <div class="insights-grid">
+        <div class="insight-card success">
+          <div class="insight-icon">✅</div>
+          <div class="insight-content">
+            <div class="insight-label">Success Rate</div>
+            <div class="insight-value" id="browserSuccessRate">--%</div>
+            <div class="insight-detail">Tasks completed without errors</div>
+          </div>
+        </div>
+        
+        <div class="insight-card primary">
+          <div class="insight-icon">🔄</div>
+          <div class="insight-content">
+            <div class="insight-label">Total Tasks</div>
+            <div class="insight-value" id="browserTotalTasks">--</div>
+            <div class="insight-detail">Browser automation tasks</div>
+          </div>
+        </div>
+        
+        <div class="insight-card info">
+          <div class="insight-icon">⏱️</div>
+          <div class="insight-content">
+            <div class="insight-label">Avg Duration</div>
+            <div class="insight-value" id="browserAvgDuration">--</div>
+            <div class="insight-detail">Per task</div>
+          </div>
+        </div>
+        
+        <div class="insight-card danger">
+          <div class="insight-icon">⚠️</div>
+          <div class="insight-content">
+            <div class="insight-label">Error Rate</div>
+            <div class="insight-value" id="browserErrorRate">--%</div>
+            <div class="insight-detail">Tasks with errors</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <style>
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    
+    .tab {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .tab:hover {
+      background: var(--border);
+    }
+    
+    .tab.active {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .insight-card {
+      background: var(--bg-tertiary);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      border-left: 4px solid var(--border);
+    }
+    
+    .insight-card.primary { border-left-color: var(--primary); }
+    .insight-card.success { border-left-color: var(--success); }
+    .insight-card.warning { border-left-color: var(--warning); }
+    .insight-card.danger { border-left-color: var(--danger); }
+    .insight-card.info { border-left-color: #06b6d4; }
+    
+    .insight-icon {
+      font-size: 2rem;
+    }
+    
+    .insight-content {
+      flex: 1;
+    }
+    
+    .insight-label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+    
+    .insight-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    
+    .insight-detail {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+    
+    .recommendation-box {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(139, 92, 246, 0.1));
+      border: 1px solid var(--primary);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .recommendation-box h3 {
+      margin: 0 0 0.75rem;
+      color: var(--primary);
+    }
+    
+    .recommendation-box p {
+      margin: 0;
+      color: var(--text);
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+    
+    .insights-section {
+      background: var(--bg-tertiary);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .insights-section h3 {
+      margin: 0 0 1rem;
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+    }
+    
+    .outcome-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .outcome-item {
+      background: var(--bg-secondary);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .outcome-info {
+      flex: 1;
+    }
+    
+    .outcome-desc {
+      font-size: 0.95rem;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+    
+    .outcome-meta {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    
+    .outcome-result {
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.25rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    
+    .outcome-result.response {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+    }
+    
+    .outcome-result.no-response {
+      background: rgba(100, 116, 139, 0.2);
+      color: var(--secondary);
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+  </style>
+
+  <script>
+    let currentType = 'job_application';
+    
+    function selectInsightType(type) {
+      currentType = type;
+      
+      // Update tabs
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.type === type);
+      });
+      
+      // Show correct section
+      document.getElementById('jobInsights').classList.toggle('hidden', type !== 'job_application');
+      document.getElementById('mediaInsights').classList.toggle('hidden', type !== 'media_download');
+      document.getElementById('browserInsights').classList.toggle('hidden', type !== 'browser_automation');
+      
+      // Load data for selected type
+      loadInsights(type);
+    }
+    
+    async function loadInsights(type) {
+      try {
+        const response = await fetch(`/agentflow/api/insights/${type}`);
+        const data = await response.json();
+        
+        if (!data.success) throw new Error(data.error);
+        
+        if (type === 'job_application') {
+          renderJobInsights(data);
+        } else if (type === 'media_download') {
+          renderMediaInsights(data);
+        } else if (type === 'browser_automation') {
+          renderBrowserInsights(data);
+        }
+      } catch (error) {
+        console.error('Failed to load insights:', error);
+      }
+    }
+    
+    function renderJobInsights(data) {
+      const insights = data.insights || {};
+      const outcomes = data.outcomes || [];
+      
+      // Update cards
+      document.getElementById('jobResponseRate').textContent = insights.response_rate || '0%';
+      document.getElementById('jobResponseDetail').textContent = 
+        `${insights.responses_received || 0} responses received`;
+      
+      document.getElementById('jobBestTime').textContent = 
+        insights.best_time_to_apply?.hour || 'N/A';
+      document.getElementById('jobBestTimeDetail').textContent = 
+        insights.best_time_to_apply?.response_rate ? 
+        `${insights.best_time_to_apply.response_rate} response rate` : 'Not enough data';
+      
+      document.getElementById('jobTotalApps').textContent = 
+        insights.total_applications || 0;
+      document.getElementById('jobTotalDetail').textContent = 'Total applications sent';
+      
+      // Count interviews from outcomes
+      const interviews = outcomes.reduce((sum, o) => sum + (o.metrics?.interviews || 0), 0);
+      document.getElementById('jobInterviews').textContent = interviews;
+      document.getElementById('jobInterviewDetail').textContent = 'Scheduled interviews';
+      
+      // Recommendation
+      document.getElementById('jobRecommendation').textContent = 
+        insights.recommendation || 'Keep tracking your applications to get personalized insights!';
+      
+      // Render recent outcomes
+      renderRecentOutcomes(outcomes);
+    }
+    
+    function renderMediaInsights(data) {
+      const insights = data.insights || {};
+      
+      document.getElementById('mediaSuccessRate').textContent = insights.success_rate || '0%';
+      document.getElementById('mediaTotalDownloads').textContent = insights.total_downloads || 0;
+      document.getElementById('mediaAvgSize').textContent = 
+        insights.avg_size_mb ? `${(insights.avg_size_mb / 1024).toFixed(1)} GB` : '-- GB';
+    }
+    
+    function renderBrowserInsights(data) {
+      const insights = data.insights || {};
+      
+      document.getElementById('browserSuccessRate').textContent = '0%';
+      document.getElementById('browserTotalTasks').textContent = data.total_outcomes || 0;
+    }
+    
+    function renderRecentOutcomes(outcomes) {
+      const container = document.getElementById('recentOutcomes');
+      
+      if (!outcomes || outcomes.length === 0) {
+        container.innerHTML = '<div class="empty-state">No outcomes recorded yet</div>';
+        return;
+      }
+      
+      container.innerHTML = outcomes.slice(0, 10).map(o => {
+        const hasResponse = o.metrics?.responses > 0;
+        const date = new Date(o.recorded_at).toLocaleDateString('en-US', { 
+          month: 'short', day: 'numeric' 
+        });
+        
+        return `
+          <div class="outcome-item">
+            <div class="outcome-info">
+              <div class="outcome-desc">${o.description || 'Job application'}</div>
+              <div class="outcome-meta">
+                ${date} • ${o.metrics?.applied || 0} applications • 
+                ${o.metrics?.keywords?.join(', ') || 'No keywords'}
+              </div>
+            </div>
+            <div class="outcome-result ${hasResponse ? 'response' : 'no-response'}">
+              ${hasResponse ? `${o.metrics.responses} response${o.metrics.responses > 1 ? 's' : ''}` : 'No response'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Load initial data
+    document.addEventListener('DOMContentLoaded', () => {
+      loadInsights('job_application');
+    });
+  </script>
+</body>
+</html>

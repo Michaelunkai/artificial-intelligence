@@ -1,0 +1,101 @@
+=================================================================
+  COMPLETE SETUP GUIDE - ZERO TECHNICAL KNOWLEDGE NEEDED
+=================================================================
+
+🎯 GET 4 TELEGRAM AI BOTS WORKING IN 4 SIMPLE STEPS:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1: RUN THE INSTALLER (5-10 minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Double-click: OpenClawInstaller.cmd
+2. Wait for installation to complete (installs Node.js + OpenClaw)
+3. Done! (uses FREE AI models automatically, no API key needed)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2: CREATE TELEGRAM BOTS (2 minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Open Telegram app
+2. Search for: @BotFather
+3. Send message: /newbot
+4. Follow prompts:
+   - Enter bot name: "My Assistant 1"
+   - Enter bot username: "myassistant1_bot"
+   - Copy the TOKEN (looks like: 1234567890:ABCdef...)
+5. Repeat 3 more times for bot2, bot3, bot4
+6. Save all 4 tokens somewhere
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3: ADD BOT TOKENS (1 minute)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Open file explorer
+2. Go to: C:\Users\<YourName>\.openclaw
+3. Right-click openclaw.json → Open with Notepad
+4. Find these lines:
+   "botToken": "TELEGRAM_BOT_TOKEN_1_HERE"
+   "botToken": "TELEGRAM_BOT_TOKEN_2_HERE"
+   "botToken": "TELEGRAM_BOT_TOKEN_3_HERE"
+   "botToken": "TELEGRAM_BOT_TOKEN_4_HERE"
+
+5. Replace with your actual tokens (keep the quotes):
+   "botToken": "1234567890:ABCdef..."
+
+6. Save file (Ctrl+S)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 4: START THE BOTS (30 seconds)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Look at bottom-right of screen (system tray)
+2. Find OpenClaw icon (green circle)
+3. Right-click it
+4. Click: "Restart Gateway"
+5. Wait 10 seconds
+6. Open Telegram → message any of your 4 bots
+7. DONE! Each bot is a separate AI assistant!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ YOU NOW HAVE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ 4 independent AI assistants
+✓ Each in separate Telegram chat
+✓ Uses FREE AI models (no costs)
+✓ Auto-starts every time you boot computer
+✓ Runs in background (system tray icon)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 OPTIONAL: UPGRADE TO BETTER AI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Free models work but are basic. For MUCH better AI (like Claude):
+
+1. Get API key: https://console.anthropic.com/settings/keys
+2. Open PowerShell (search in Start menu)
+3. Paste and run:
+   [System.Environment]::SetEnvironmentVariable('ANTHROPIC_API_KEY', 'your-key-here', 'User')
+4. Right-click OpenClaw tray icon → Restart Gateway
+5. Done! Now using Claude AI (costs ~$1-5/month typical use)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❓ TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Problem: Bots don't respond
+→ Check tray icon is green
+→ Right-click tray icon → Open Log (check for errors)
+→ Make sure tokens are correct in openclaw.json
+
+Problem: Can't find openclaw.json
+→ Show hidden files: File Explorer → View → Show hidden files
+
+Problem: Tray icon missing
+→ Run: C:\Users\<YourName>\.openclaw\tray\OpenClawTray.vbs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+That's it! Send this guide to anyone - they can set up in 15 minutes.
+
+=================================================================

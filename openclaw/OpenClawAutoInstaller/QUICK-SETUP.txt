@@ -1,0 +1,23 @@
+=================================================================
+  COMPLETE SETUP - STEP BY STEP (100 WORDS)
+=================================================================
+
+STEP 1: Double-click OpenClawInstaller.cmd (wait 2 minutes - auto-installs)
+
+STEP 2: Open Telegram → search @BotFather → send /newbot
+
+STEP 3: Enter bot name → enter username → copy token
+
+STEP 4: Paste token in installer when prompted
+
+STEP 5: Repeat steps 2-4 three more times (total 4 bots)
+
+STEP 6: Installer auto-completes (saves configs, starts gateway)
+
+STEP 7: Open Telegram → message any of your 4 bots
+
+DONE! Four independent AI assistants, different chats, free models, auto-starts every boot.
+
+Upgrade to Claude: Add Anthropic API key later.
+
+=================================================================

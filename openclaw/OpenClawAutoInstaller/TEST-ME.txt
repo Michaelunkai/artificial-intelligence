@@ -1,0 +1,157 @@
+=================================================================
+  OPENCLAW AUTO-INSTALLER - TESTING INSTRUCTIONS
+=================================================================
+
+🎯 ONE-LINER TEST COMMAND (for Till to verify):
+
+   TestInSandbox.cmd
+
+This will:
+1. Check if Windows Sandbox is enabled
+2. Launch a completely isolated Windows 11 environment
+3. Automatically run the full installer inside
+4. Show you the entire setup process in real-time
+5. Discard everything when you close the Sandbox window
+
+=================================================================
+  WHAT HAPPENS IN THE SANDBOX
+=================================================================
+
+The installer will:
+
+✅ Install Node.js v24.13.0 LTS
+✅ Install OpenClaw globally via npm
+✅ Create config directory: C:\Users\WDAGUtilityAccount\.openclaw
+✅ Set up workspace with SOUL.md and USER.md
+✅ Install Android Debug Bridge (ADB)
+✅ Create system tray scripts
+✅ Add startup shortcut (auto-run on boot)
+✅ Configure OpenClaw gateway
+✅ Start the gateway service
+✅ Create helper scripts (location, etc.)
+
+=================================================================
+  IF SANDBOX ISN'T ENABLED
+=================================================================
+
+You'll see a message explaining how to enable it:
+
+1. Open PowerShell as Administrator
+2. Run this command:
+
+   Enable-WindowsOptionalFeature -Online -FeatureName Containers-DisposableClientVM -All
+
+3. Restart your computer
+4. Run TestInSandbox.cmd again
+
+=================================================================
+  IF SANDBOX TEST SUCCEEDS
+=================================================================
+
+Then you can install on your main system with:
+
+   OpenClawInstaller.cmd
+
+It will ask for your Anthropic API key during installation.
+You can also skip that and set it manually later.
+
+=================================================================
+  VERIFY THE INSTALLATION
+=================================================================
+
+After installing (either in Sandbox or on main system), verify:
+
+   powershell -ExecutionPolicy Bypass -File verify-installation.ps1
+
+This runs 10 checks and shows you exactly what's working.
+
+=================================================================
+  QUICK REFERENCE
+=================================================================
+
+Commands available after installation:
+
+   openclaw status          - Check gateway status
+   openclaw chat            - Start interactive chat
+   openclaw skill add <id>  - Install a skill
+   openclaw logs            - View logs
+   openclaw gateway restart - Restart the gateway
+
+System tray icon (after install):
+   - Right-click for menu
+   - Restart gateway
+   - View logs
+   - Stop/exit
+
+=================================================================
+  FOLDER CONTENTS
+=================================================================
+
+📁 OpenClawAutoInstaller/
+├── 📄 README.md                  - Full documentation
+├── 📄 TEST-ME.txt                - This file
+├── 🚀 OpenClawInstaller.cmd      - Main installer (double-click)
+├── 🧪 TestInSandbox.cmd          - Sandbox test (RECOMMENDED)
+├── ⚙️ setup.ps1                  - Core installation script
+├── 📦 sandbox-test.wsb           - Sandbox configuration
+└── ✅ verify-installation.ps1    - Post-install verification
+
+=================================================================
+  WHAT GETS REPLICATED
+=================================================================
+
+This installer creates an OpenClaw setup identical to the reference:
+
+✅ Same Node.js version (v24.13.0)
+✅ Same OpenClaw version (latest stable)
+✅ Same directory structure
+✅ Same system tray integration
+✅ Same auto-start configuration
+✅ Same helper scripts
+✅ Same default workspace files
+
+❌ EXCLUDES (security):
+   - API keys
+   - Bot tokens
+   - Credentials
+   - Personal data
+   - Chat history
+
+You'll need to provide your own Anthropic API key.
+Telegram bot integration is optional.
+
+=================================================================
+  WORKS ON
+=================================================================
+
+✅ Brand new Windows 11 machine
+✅ Windows 11 with zero prior setup
+✅ Any Windows 11 edition (Home/Pro/Enterprise)
+✅ Non-technical users (just double-click!)
+
+Minimum requirements:
+   - Windows 11
+   - 4GB RAM
+   - 2GB free disk space
+   - Internet connection
+
+=================================================================
+  SUPPORT
+=================================================================
+
+If something fails:
+
+1. Check verify-installation.ps1 output
+2. Look for error messages in the installer
+3. Try running as Administrator if needed
+4. Check the README.md for troubleshooting
+
+OpenClaw docs: https://docs.openclaw.ai
+GitHub: https://github.com/openclaw/openclaw
+Discord: https://discord.com/invite/clawd
+
+=================================================================
+
+⚡ READY TO TEST? Run: TestInSandbox.cmd
+
+=================================================================
