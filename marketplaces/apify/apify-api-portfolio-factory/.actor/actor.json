@@ -1,0 +1,18 @@
+{
+  "actorSpecification": 1,
+  "name": "url-intelligence-api",
+  "title": "URL Intelligence API",
+  "description": "Turns URLs into clean metadata, link summaries, text statistics, and API-ready dataset rows.",
+  "version": "0.1",
+  "buildTag": "latest",
+  "meta": {
+    "templateId": "ts-start",
+    "generatedBy": "OpenAI Codex GPT-5"
+  },
+  "input": "./input_schema.json",
+  "dockerfile": "../Dockerfile",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  },
+  "output": "./output_schema.json"
+}

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dist-site/
+storage/
+.env
+.env.*
+!.env.example
+*.log
+apify_storage/
+coverage/
+.apify/
+.netlify/
+.qa/

@@ -1,0 +1,1 @@
+Read /proc/sys/kernel/osrelease and /proc/version using tools, verify that the kernel release appears in the full version text, then report the verified release and whether the check passed. Do not change any files.

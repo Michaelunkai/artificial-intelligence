@@ -1,0 +1,40 @@
+{
+  "title": "URL Intelligence API input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "urls": {
+      "title": "URLs",
+      "type": "array",
+      "description": "HTTP or HTTPS URLs to analyze.",
+      "editor": "stringList",
+      "prefill": ["https://example.com"],
+      "items": {
+        "type": "string"
+      }
+    },
+    "maxLinksPerUrl": {
+      "title": "Maximum links per URL",
+      "type": "integer",
+      "description": "Caps extracted links for each page.",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 25
+    },
+    "timeoutMs": {
+      "title": "Fetch timeout in milliseconds",
+      "type": "integer",
+      "description": "Network timeout for each URL.",
+      "minimum": 1000,
+      "maximum": 30000,
+      "default": 12000
+    },
+    "includeTextSample": {
+      "title": "Include text sample",
+      "type": "boolean",
+      "description": "Includes a short plain-text sample in each output row.",
+      "default": true
+    }
+  },
+  "required": ["urls"]
+}

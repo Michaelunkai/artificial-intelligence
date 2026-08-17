@@ -1,0 +1,10 @@
+bin/
+obj/
+verification-bin*/
+publish/
+publish-secure/
+work/
+*.user
+*.suo
+*.log
+.vs/

@@ -1,0 +1,2980 @@
+﻿# Fast PowerShell profile generated on 20260501-005324.
+# The full function body library is preserved at:
+# C:\Users\micha\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.full.ps1
+$script:_prof_sw = [System.Diagnostics.Stopwatch]::StartNew()
+$script:FullProfileLibraryPath = 'C:\Users\micha\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.full.ps1'
+$script:FullProfileDefinitionCachePath = 'C:\Users\micha\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.full.definitions.ps1'
+$script:FullProfileLoaded = $false
+
+$script:ProfilePowerShellArgs = @([Environment]::GetCommandLineArgs())
+$script:ProfileIsCommandMode = $script:ProfilePowerShellArgs -contains '-Command' -or $script:ProfilePowerShellArgs -contains '-EncodedCommand' -or $script:ProfilePowerShellArgs -contains '-File' -or $script:ProfilePowerShellArgs -contains '-NonInteractive'
+$script:ProfileIsInteractiveConsole = $Host.Name -eq 'ConsoleHost' -and [Environment]::UserInteractive -and -not $script:ProfileIsCommandMode
+$script:CachedWingetExecutable = $null
+$script:CachedProfilePythonExecutable = $null
+
+function global:Ensure-ProfileGetFileHashCommand {
+    if (Get-Command Get-FileHash -ErrorAction SilentlyContinue) { return }
+    Import-Module Microsoft.PowerShell.Utility -ErrorAction SilentlyContinue
+    if (Get-Command Get-FileHash -ErrorAction SilentlyContinue) { return }
+
+    function global:Get-FileHash {
+        [CmdletBinding(DefaultParameterSetName = 'Path')]
+        param(
+            [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'Path')]
+            [string[]]$Path,
+
+            [Parameter(Mandatory = $true, ParameterSetName = 'LiteralPath')]
+            [Alias('PSPath')]
+            [string[]]$LiteralPath,
+
+            [ValidateSet('SHA1', 'SHA256', 'SHA384', 'SHA512', 'MD5')]
+            [string]$Algorithm = 'SHA256'
+        )
+
+        $inputPaths = if ($PSCmdlet.ParameterSetName -eq 'LiteralPath') { $LiteralPath } else { $Path }
+        foreach ($inputPath in $inputPaths) {
+            $resolvedPaths = if ($PSCmdlet.ParameterSetName -eq 'LiteralPath') {
+                Resolve-Path -LiteralPath $inputPath -ErrorAction Stop
+            } else {
+                Resolve-Path -Path $inputPath -ErrorAction Stop
+            }
+
+            foreach ($resolvedPath in $resolvedPaths) {
+                $stream = [System.IO.File]::OpenRead($resolvedPath.ProviderPath)
+                $hashAlgorithm = [System.Security.Cryptography.HashAlgorithm]::Create($Algorithm)
+                try {
+                    $hashBytes = $hashAlgorithm.ComputeHash($stream)
+                    $hash = ([System.BitConverter]::ToString($hashBytes) -replace '-', '').ToUpperInvariant()
+                    [pscustomobject]@{
+                        Algorithm = $Algorithm.ToUpperInvariant()
+                        Hash = $hash
+                        Path = $resolvedPath.ProviderPath
+                    }
+                } finally {
+                    if ($hashAlgorithm) { $hashAlgorithm.Dispose() }
+                    $stream.Dispose()
+                }
+            }
+        }
+    }
+}
+function global:Resolve-ProfilePythonExecutable {
+    if ($script:CachedProfilePythonExecutable -and (Test-Path -LiteralPath $script:CachedProfilePythonExecutable -PathType Leaf)) {
+        return $script:CachedProfilePythonExecutable
+    }
+
+    $candidatePaths = @(
+        $env:CODEX_PROFILE_PYTHON,
+        (Join-Path $env:LOCALAPPDATA 'Programs\Python\Python312\python.exe'),
+        (Join-Path $env:LOCALAPPDATA 'Programs\Python\Python311\python.exe'),
+        'C:\Python312\python.exe',
+        'C:\Python311\python.exe'
+    )
+
+    foreach ($candidate in $candidatePaths) {
+        if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            $script:CachedProfilePythonExecutable = (Resolve-Path -LiteralPath $candidate).ProviderPath
+            return $script:CachedProfilePythonExecutable
+        }
+    }
+
+    $command = Get-Command python -All -CommandType Application -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -and $_.Path -notlike '*\Microsoft\WindowsApps\python*.exe' } |
+        Select-Object -First 1
+    if ($command) {
+        $script:CachedProfilePythonExecutable = $command.Path
+        return $script:CachedProfilePythonExecutable
+    }
+
+    $launcher = Get-Command py.exe -CommandType Application -ErrorAction SilentlyContinue
+    if ($launcher) { return $launcher.Path }
+
+    throw 'No usable Python interpreter found. Install Python or set CODEX_PROFILE_PYTHON to a real python.exe path.'
+}
+
+function global:python {
+    $resolvedPython = Resolve-ProfilePythonExecutable
+    if ([System.IO.Path]::GetFileName($resolvedPython) -ieq 'py.exe') {
+        & $resolvedPython -3 @args
+        return
+    }
+    & $resolvedPython @args
+}
+
+function Optimize-CurrentTerminalResponsiveness {
+    try {
+        $current = [System.Diagnostics.Process]::GetCurrentProcess()
+        if ($current.PriorityClass -in @('Idle', 'BelowNormal', 'Normal')) {
+            $current.PriorityClass = 'AboveNormal'
+        }
+
+        $processId = $PID
+        for ($depth = 0; $depth -lt 6; $depth++) {
+            $procInfo = Get-CimInstance Win32_Process -Filter "ProcessId=$processId" -ErrorAction SilentlyContinue
+            if (-not $procInfo -or -not $procInfo.ParentProcessId) { break }
+            $processId = [int]$procInfo.ParentProcessId
+            $parent = Get-Process -Id $processId -ErrorAction SilentlyContinue
+            if (-not $parent) { continue }
+            if ($parent.ProcessName -eq 'WindowsTerminal') {
+                if ($parent.PriorityClass -ne 'High') { $parent.PriorityClass = 'High' }
+            } elseif ($parent.ProcessName -in @('OpenConsole', 'conhost', 'cmd', 'powershell', 'pwsh')) {
+                if ($parent.PriorityClass -in @('Idle', 'BelowNormal', 'Normal')) { $parent.PriorityClass = 'AboveNormal' }
+            }
+        }
+    } catch { }
+}
+
+if ($script:ProfileIsInteractiveConsole) {
+    try {
+        $current = [System.Diagnostics.Process]::GetCurrentProcess()
+        if ($current.PriorityClass -in @('Idle', 'BelowNormal', 'Normal')) {
+            $current.PriorityClass = 'AboveNormal'
+        }
+    } catch { }
+}
+
+function Repair-StandardWindowsProcessEnvironment {
+    $systemRoot = [Environment]::GetEnvironmentVariable('SystemRoot', 'Process')
+    if ([string]::IsNullOrWhiteSpace($systemRoot)) {
+        $systemRoot = [Environment]::GetEnvironmentVariable('SystemRoot', 'Machine')
+    }
+    if ([string]::IsNullOrWhiteSpace($systemRoot)) { $systemRoot = 'C:\Windows' }
+
+    $systemDrive = [Environment]::GetEnvironmentVariable('SystemDrive', 'Process')
+    if ([string]::IsNullOrWhiteSpace($systemDrive) -and $systemRoot -match '^[A-Za-z]:') {
+        $systemDrive = $systemRoot.Substring(0, 2)
+    }
+    if ([string]::IsNullOrWhiteSpace($systemDrive)) { $systemDrive = 'C:' }
+
+    $defaults = @{
+        SystemDrive = $systemDrive
+        SystemRoot = $systemRoot
+        windir = $systemRoot
+        ProgramData = (Join-Path $systemDrive 'ProgramData')
+        ALLUSERSPROFILE = (Join-Path $systemDrive 'ProgramData')
+        PUBLIC = (Join-Path $systemDrive 'Users\Public')
+    }
+
+    foreach ($name in $defaults.Keys) {
+        if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name, 'Process'))) {
+            Set-Item -Path "Env:$name" -Value $defaults[$name]
+        }
+    }
+}
+Repair-StandardWindowsProcessEnvironment
+
+function Initialize-FastProfilePsReadLineHistory {
+    try {
+        $root = Join-Path $env:APPDATA 'Microsoft\Windows\PowerShell\PSReadLine'
+        $sessionDir = Join-Path $root 'sessions'
+        if (-not (Test-Path -LiteralPath $sessionDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $sessionDir -Force | Out-Null
+        }
+
+        $sessionPath = Join-Path $sessionDir ("ConsoleHost_{0}.txt" -f $PID)
+        if (-not (Test-Path -LiteralPath $sessionPath -PathType Leaf)) {
+            New-Item -ItemType File -Path $sessionPath -Force | Out-Null
+        }
+
+        if (Get-Command Set-PSReadLineOption -ErrorAction SilentlyContinue) {
+            Set-PSReadLineOption -HistorySavePath $sessionPath -HistorySaveStyle SaveIncrementally -ErrorAction SilentlyContinue
+        }
+    } catch { }
+}
+
+function Update-FullProfileDefinitionCache {
+    param(
+        [Parameter(Mandatory = $true)][string]$SourcePath,
+        [Parameter(Mandatory = $true)][string]$CachePath
+    )
+
+    if (-not (Test-Path -LiteralPath $SourcePath -PathType Leaf)) {
+        throw "Full PowerShell profile library not found: $SourcePath"
+    }
+
+    $sourceItem = Get-Item -LiteralPath $SourcePath
+    $cacheFormat = '# FullProfileDefinitionCacheFormat: 2'
+    if (Test-Path -LiteralPath $CachePath -PathType Leaf) {
+        $cacheItem = Get-Item -LiteralPath $CachePath
+        $cacheHeader = Get-Content -LiteralPath $CachePath -TotalCount 3 -ErrorAction SilentlyContinue
+        if ($cacheItem.LastWriteTimeUtc -ge $sourceItem.LastWriteTimeUtc -and $cacheHeader -contains $cacheFormat) { return }
+    }
+
+    $parseErrors = $null
+    $tokens = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($SourcePath, [ref]$tokens, [ref]$parseErrors)
+    if ($parseErrors -and $parseErrors.Count -gt 0) {
+        throw "Cannot parse full PowerShell profile library '$SourcePath': $($parseErrors[0].Message)"
+    }
+
+    $lastFunctionLines = New-Object 'System.Collections.Hashtable' ([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($functionAst in $ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $true)) {
+        $functionName = $functionAst.Name -replace '^(?i:global:)', ''
+        $lastFunctionLines[$functionName] = $functionAst.Extent.StartLineNumber
+    }
+
+    $parts = New-Object 'System.Collections.Generic.List[string]'
+    $parts.Add($cacheFormat) | Out-Null
+    $parts.Add("# Generated from $SourcePath. Contains final function definitions and safe assignments only.") | Out-Null
+    $parts.Add("# Regenerate by calling fullprofile after editing the full profile source.") | Out-Null
+
+    foreach ($statement in $ast.EndBlock.Statements) {
+        if ($statement -is [System.Management.Automation.Language.FunctionDefinitionAst]) {
+            $functionName = $statement.Name -replace '^(?i:global:)', ''
+            if ($lastFunctionLines[$functionName] -eq $statement.Extent.StartLineNumber) {
+                $parts.Add($statement.Extent.Text.TrimEnd()) | Out-Null
+            }
+            continue
+        }
+
+        if ($statement -is [System.Management.Automation.Language.AssignmentStatementAst]) {
+            $commands = @($statement.FindAll({ param($node) $node -is [System.Management.Automation.Language.CommandAst] }, $true))
+            if ($commands.Count -eq 0) {
+                $parts.Add($statement.Extent.Text.TrimEnd()) | Out-Null
+            }
+            continue
+        }
+
+        if ($statement -is [System.Management.Automation.Language.PipelineAst]) {
+            $commands = @($statement.FindAll({ param($node) $node -is [System.Management.Automation.Language.CommandAst] }, $true))
+            if ($commands.Count -gt 0 -and @($commands | Where-Object { $_.GetCommandName() -ne 'Set-Alias' }).Count -eq 0) {
+                $parts.Add($statement.Extent.Text.TrimEnd()) | Out-Null
+            }
+        }
+    }
+
+    $cacheDir = Split-Path -Parent $CachePath
+    if (-not (Test-Path -LiteralPath $cacheDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
+    }
+
+    $tempPath = "$CachePath.tmp"
+    [System.IO.File]::WriteAllText($tempPath, ($parts -join [Environment]::NewLine + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $tempPath -Destination $CachePath -Force
+}
+
+$script:ProfileMyFixOverride = {
+    [CmdletBinding()]
+    param([switch]$NoReboot)
+
+    $isoPath = 'E:\isos\Michrepair.iso'
+    if (-not (Test-Path -LiteralPath $isoPath -PathType Leaf)) {
+        throw "Michrepair ISO not found at $isoPath"
+    }
+
+    $ventoyDrive = 'E:'
+    $ventoyJson = Join-Path $ventoyDrive 'ventoy\ventoy.json'
+    $ventoyImagePath = '/isos/Michrepair.iso'
+    $cfg = [ordered]@{
+        control = @(
+            [ordered]@{ VTOY_DEFAULT_MENU_MODE = '0' }
+            [ordered]@{ VTOY_DEFAULT_SEARCH_ROOT = '/isos' }
+            [ordered]@{ VTOY_MENU_TIMEOUT = '3' }
+            [ordered]@{ VTOY_DEFAULT_IMAGE = $ventoyImagePath }
+            [ordered]@{ VTOY_SECONDARY_BOOT_MENU = '1' }
+            [ordered]@{ VTOY_SECONDARY_TIMEOUT = '3' }
+        )
+    } | ConvertTo-Json -Depth 5 -Compress
+
+    $ventoyDir = Split-Path -Parent $ventoyJson
+    if (-not (Test-Path -LiteralPath $ventoyDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $ventoyDir | Out-Null
+    }
+    [System.IO.File]::WriteAllText($ventoyJson, $cfg, [System.Text.Encoding]::ASCII)
+
+    $volumes = Get-CimInstance Win32_Volume
+    $ventoyVolume = $volumes | Where-Object { $_.DriveLetter -eq $ventoyDrive } | Select-Object -First 1
+    if (-not $ventoyVolume) {
+        throw "Could not map $ventoyDrive to a Windows volume."
+    }
+
+    $volumeId = ($ventoyVolume.DeviceID -replace '^\\\\\?\\Volume\{', '') -replace '\}\\$', ''
+    $diskSignature = ($volumeId -split '-')[0]
+    $efiVolume = $volumes |
+        Where-Object { -not $_.DriveLetter -and $_.DeviceID -like "\\?\Volume{$diskSignature-*" -and $_.DeviceID -notlike '*-0000-0000-0000-*' } |
+        Select-Object -First 1
+    if (-not $efiVolume) {
+        throw "Could not find hidden Ventoy EFI partition paired with $ventoyDrive."
+    }
+
+    $logicalLink = Get-CimInstance Win32_LogicalDiskToPartition |
+        Where-Object { $_.Dependent -match 'DeviceID = "E:"' } |
+        Select-Object -First 1
+    if (-not $logicalLink -or $logicalLink.Antecedent -notmatch 'Disk #(\d+), Partition #(\d+)') {
+        throw "Could not map $ventoyDrive to its disk partition."
+    }
+    $diskNumber = [int]$Matches[1]
+    $dataPartitionNumber = [int]$Matches[2] + 1
+
+    try {
+        $storagePartitions = Get-CimInstance -Namespace root\Microsoft\Windows\Storage -ClassName MSFT_Partition -ErrorAction Stop
+        $dataPartition = $storagePartitions |
+            Where-Object { $_.DiskNumber -eq $diskNumber -and $_.PartitionNumber -eq $dataPartitionNumber -and $_.DriveLetter -eq 'E' } |
+            Select-Object -First 1
+        $efiPartition = $storagePartitions |
+            Where-Object {
+                $_.DiskNumber -eq $diskNumber -and
+                $_.PartitionNumber -gt $dataPartitionNumber -and
+                $_.MbrType -eq 239 -and
+                $_.AccessPaths -contains $efiVolume.DeviceID
+            } |
+            Sort-Object PartitionNumber |
+            Select-Object -First 1
+        if (-not $dataPartition -or -not $efiPartition) {
+            throw "Could not verify the hidden Ventoy EFI partition belongs to $ventoyDrive."
+        }
+    } catch [Microsoft.Management.Infrastructure.CimException] {
+        Write-Warning "Skipping MSFT_Partition verification because Windows Storage CIM returned: $($_.Exception.Message). Continuing with Win32 volume/link checks."
+    }
+
+    $fltmcText = fltmc volumes
+    $dataLine = $fltmcText | Where-Object { $_ -match '^\s*E:\s+\\Device\\HarddiskVolume(\d+)\s+' } | Select-Object -First 1
+    if (-not $dataLine -or $dataLine -notmatch '\\Device\\HarddiskVolume(\d+)') {
+        throw "Could not resolve $ventoyDrive device path from fltmc."
+    }
+    $efiDevice = "\Device\HarddiskVolume$([int]$Matches[1] + 1)"
+
+    $firmwareText = bcdedit /enum firmware
+    $entry = [regex]::Matches(($firmwareText -join "`n"), '(?ms)^Firmware Application.*?(?=^Firmware Application|^Windows Boot Manager|^Firmware Boot Manager|\z)') |
+        Where-Object {
+            $_.Value -match [regex]::Escape("device                  partition=$efiDevice") -and
+            $_.Value -match 'path\s+\\EFI\\BOOT\\BOOTX64\.EFI'
+        } |
+        Select-Object -First 1
+    if (-not $entry) {
+        throw "Could not find firmware boot entry for $efiDevice. Refusing to use stale hard-coded GUID."
+    }
+
+    $bootId = [regex]::Match($entry.Value, 'identifier\s+(\{[^}]+\})').Groups[1].Value
+    if ([string]::IsNullOrWhiteSpace($bootId)) {
+        throw "Matched Ventoy firmware entry but could not parse its identifier."
+    }
+
+    bcdedit /set '{fwbootmgr}' bootsequence $bootId | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        throw "bcdedit failed to set firmware bootsequence to $bootId."
+    }
+    Write-Host "myfix configured Ventoy default image $ventoyImagePath on $ventoyDrive and firmware bootsequence $bootId ($efiDevice)."
+    if (-not $NoReboot) {
+        shutdown /r /t 0
+    }
+}
+
+$script:ProfileQAccessOverride = {
+    $requiredWslBackupPath = 'F:\backup\linux\wsl'
+    if (-not (Test-Path -LiteralPath $requiredWslBackupPath -PathType Container)) {
+        New-Item -ItemType Directory -Path $requiredWslBackupPath -Force | Out-Null
+    }
+
+    $scriptPath = 'F:\study\shells\powershell\scripts\PinnedShortcuts\qaccess.ps1'
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "qaccess script not found: $scriptPath"
+    }
+
+    & $scriptPath @args
+}
+
+$script:ProfileFixFixFixFixOverride = {
+    $scriptPath = 'F:\study\projects\MichWin11RepairISO\scripts\windows\servicing\dism-restorehealth-error2-ps5\Fix-DISM-RestoreHealth-Error2-PS5.ps1'
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "fixfixfixfix script not found: $scriptPath"
+    }
+
+    & $scriptPath @args
+    fixfixfix
+}
+
+function Load-FullPowerShellProfile {
+    if ($script:FullProfileLoaded) { return }
+    if (-not (Test-Path -LiteralPath $script:FullProfileLibraryPath -PathType Leaf)) {
+        throw "Full PowerShell profile library not found: $script:FullProfileLibraryPath"
+    }
+
+    Update-FullProfileDefinitionCache -SourcePath $script:FullProfileLibraryPath -CachePath $script:FullProfileDefinitionCachePath
+    if (-not (Test-Path -LiteralPath $script:FullProfileDefinitionCachePath -PathType Leaf)) {
+        throw "Full PowerShell profile definition cache not found: $script:FullProfileDefinitionCachePath"
+    }
+
+    $script:FullProfileLoaded = $true
+    $env:PROFILE_FAST_PROXY_LOAD = '1'
+    try {
+        . $script:FullProfileDefinitionCachePath
+        Set-Item -Path 'Function:\global:myfix' -Value $script:ProfileMyFixOverride -Force
+        Set-Item -Path 'Function:\global:qaccess' -Value $script:ProfileQAccessOverride -Force
+        Set-Item -Path 'Function:\global:fixfixfixfix' -Value $script:ProfileFixFixFixFixOverride -Force
+    } finally {
+        Remove-Item Env:PROFILE_FAST_PROXY_LOAD -ErrorAction SilentlyContinue
+    }
+}
+
+function fullprofile { Load-FullPowerShellProfile }
+function nomouse { [Console]::Write("$([char]27)[?1000l$([char]27)[?1002l$([char]27)[?1003l$([char]27)[?1006l$([char]27)[?1015l$([char]27)[?1016l") }
+
+$gitBin = 'C:\Program Files\Git\usr\bin'
+if ($env:Path -notlike "*$gitBin*") { $env:Path = "$gitBin;$env:Path" }
+foreach ($profilePathPart in @('C:\Users\micha\.bun\bin', 'F:\backup\Nodejs\global', "$env:USERPROFILE\bin", "$env:APPDATA\npm", "$env:LOCALAPPDATA\Microsoft\WindowsApps", "$env:LOCALAPPDATA\Microsoft\WinGet\Links")) {
+    if ($profilePathPart -and $env:Path -notlike "*$profilePathPart*") {
+        $env:Path += ";$profilePathPart"
+    }
+}
+
+function global:Resolve-WingetExecutable {
+    if ($script:CachedWingetExecutable -and (Test-Path -LiteralPath $script:CachedWingetExecutable -PathType Leaf)) {
+        return $script:CachedWingetExecutable
+    }
+
+    $windowsApps = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps'
+    if ((Test-Path -LiteralPath $windowsApps -PathType Container) -and (($env:Path -split ';') -notcontains $windowsApps)) {
+        $env:Path = "$env:Path;$windowsApps"
+    }
+
+    $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+    if ($windowsApps -and (Test-Path -LiteralPath $windowsApps -PathType Container) -and (($userPath -split ';') -notcontains $windowsApps)) {
+        $newUserPath = if ([string]::IsNullOrWhiteSpace($userPath)) { $windowsApps } else { "$userPath;$windowsApps" }
+        [Environment]::SetEnvironmentVariable('Path', $newUserPath, 'User')
+    }
+
+    $command = Get-Command winget.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($command) {
+        $script:CachedWingetExecutable = $command.Source
+        return $script:CachedWingetExecutable
+    }
+
+    $aliasPath = Join-Path $windowsApps 'winget.exe'
+    if (Test-Path -LiteralPath $aliasPath -PathType Leaf) {
+        $script:CachedWingetExecutable = $aliasPath
+        return $script:CachedWingetExecutable
+    }
+
+    $packagedWinget = Get-ChildItem -Path 'C:\Program Files\WindowsApps' -Filter winget.exe -Recurse -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -like '*Microsoft.DesktopAppInstaller_*' } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if ($packagedWinget) {
+        $script:CachedWingetExecutable = $packagedWinget.FullName
+        return $script:CachedWingetExecutable
+    }
+
+    throw 'winget is not available. Microsoft.DesktopAppInstaller is missing or its WindowsApps alias is disabled.'
+}
+
+function global:winget {
+    $wingetExe = Resolve-WingetExecutable
+    & $wingetExe @args
+}
+
+function global:Get-InstalledStateToolPython {
+    $portablePython = 'F:\backup\windowsapps\AppsBackups\Macrium\python312\python.exe'
+    if (Test-Path -LiteralPath $portablePython) {
+        & $portablePython -m pip --version *> $null
+        if ($LASTEXITCODE -ne 0) {
+            & $portablePython -m ensurepip --upgrade | Out-Host
+        }
+        return $portablePython
+    }
+
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if ($python) {
+        python -m pip --version *> $null
+        if ($LASTEXITCODE -ne 0) {
+            python -m ensurepip --upgrade | Out-Host
+        }
+        return 'python'
+    }
+
+    throw 'No Python runtime found for installed-state backup/restore.'
+}
+
+function global:Get-InstalledStateToolScript {
+    $primary = 'F:\study\Devops\backup\WindowsInstalled\state\backup_restore\tooling\installed_state_backup_restore.py'
+    $backup = 'F:\backup\windowsapps\AppsBackups\installed\tooling\installed_state_backup_restore.py'
+    if (Test-Path -LiteralPath $primary) {
+        $backupDir = Split-Path -Parent $backup
+        if (-not (Test-Path -LiteralPath $backupDir)) {
+            New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+        }
+        Copy-Item -LiteralPath $primary -Destination $backup -Force -ErrorAction SilentlyContinue
+        return $primary
+    }
+    if (Test-Path -LiteralPath $backup) {
+        return $backup
+    }
+    throw "Installed-state restore script not found. Checked: $primary and $backup"
+}
+
+function global:backins {
+    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$ToolArgs)
+    & 'F:\backup\windowsapps\AppsBackups\installed\backins.bat' @ToolArgs
+}
+
+function global:resins {
+    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$ToolArgs)
+    & 'F:\backup\windowsapps\AppsBackups\installed\resins.bat' @ToolArgs
+}
+
+if ($script:ProfileIsInteractiveConsole) {
+    try { nomouse } catch { }
+    try {
+        Initialize-FastProfilePsReadLineHistory
+        if (Get-Command Set-PSReadLineOption -ErrorAction SilentlyContinue) {
+            Set-PSReadLineOption -PredictionSource History -ErrorAction SilentlyContinue
+            Set-PSReadLineOption -PredictionViewStyle ListView -ErrorAction SilentlyContinue
+            Set-PSReadLineOption -HistorySearchCursorMovesToEnd -ErrorAction SilentlyContinue
+        }
+        if (Get-Command Set-PSReadLineKeyHandler -ErrorAction SilentlyContinue) {
+            Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete -ErrorAction SilentlyContinue
+            Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward -ErrorAction SilentlyContinue
+            Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward -ErrorAction SilentlyContinue
+            Set-PSReadLineKeyHandler -Key F2 -Function SwitchPredictionView -ErrorAction SilentlyContinue
+        }
+    } catch { }
+}
+
+$script:FullProfileFunctionNames = @(
+    '_ApplyAfterburnerFlatCurve',
+    '_ApplyUltimatePowerPlan',
+    '_ClearSystemMemory',
+    '_DisableAllVisualEffects',
+    '_DisableBackgroundServices',
+    '_DisableDefenderRealtime',
+    '_DisableHPET',
+    '_DisablePowerThrottling',
+    '_DisableSecurityMitigationsGaming',
+    '_DisableTelemetryNuclear',
+    '_DisableWindowsInterference',
+    '_EnableHAGS_VRR',
+    '_EnsureTls',
+    '_out',
+    '_RunAllParallel',
+    '_SafeStep',
+    '_SetAdvancedNuclear',
+    '_SetAudioGamingNuclear',
+    '_SetBcdeditNuclear',
+    '_SetDPCMax',
+    '_SetGameModeNuclear',
+    '_SetGpuFanDirect',
+    '_SetIONuclear',
+    '_SetKernelNuclear',
+    '_SetMemoryNuclear',
+    '_SetMMCSSNuclear',
+    '_SetNetworkGamingNuclear',
+    '_SetNetworkThrottlingMax',
+    '_SetNVIDIAFullProfile',
+    '_SetNVIDIARegistryMax',
+    '_SetPCIePowerMax',
+    '_SetRyzenMax',
+    '_SetStorageNuclear',
+    '_SetTimerResMin',
+    '_UnparkAllCores',
+    '10gg',
+    '10sub',
+    '11gg',
+    '12gg',
+    '1337x',
+    '13gg',
+    '14gg',
+    '15gg',
+    '16gg',
+    '17gg',
+    '18gg',
+    '19gg',
+    '1start',
+    '20gg',
+    '20sub',
+    '21gg',
+    '22gg',
+    '23gg',
+    '24gg',
+    '25gg',
+    '26gg',
+    '27gg',
+    '28gg',
+    '29gg',
+    '2gg',
+    '2start',
+    '30gg',
+    '30sub',
+    '31gg',
+    '32gg',
+    '33gg',
+    '34gg',
+    '35gg',
+    '36gg',
+    '37gg',
+    '38gg',
+    '39gg',
+    '3dd',
+    '3gg',
+    '3ubu',
+    '3way',
+    '40gg',
+    '4fix',
+    '4gg',
+    '5fix',
+    '5gg',
+    '6gg',
+    '7gg',
+    '7z',
+    '7z7z',
+    '7zit',
+    '8gg',
+    '9gg',
+    'a2e',
+    'aad',
+    'aadb',
+    'aahk',
+    'add_keys',
+    'addclip',
+    'addclip2',
+    'addfunc',
+    'addmcp',
+    'adw',
+    'ahk2exe',
+    'ahk2ps',
+    'ahkit',
+    'alert',
+    'allenv',
+    'allstart',
+    'allstart2',
+    'amd',
+    'android',
+    'applied',
+    'armourycrate',
+    'arules',
+    'ashen',
+    'asst',
+    'audio',
+    'autocomplete',
+    'autofill',
+    'awsl',
+    'backclau',
+    'backcod',
+    'backdcim',
+    'backitup2',
+    'backins',
+    'backmac',
+    'backsys',
+    'backup',
+    'backupapps',
+    'backupec2',
+    'backupec2db',
+    'backupf',
+    'backup-status',
+    'backupwsl',
+    'bacter',
+    'bashrc',
+    'bbb',
+    'bbbb',
+    'bbbbb',
+    'bbbbbb',
+    'bbbbn',
+    'bbel',
+    'bbleach',
+    'bcu',
+    'before',
+    'berglog',
+    'bergres',
+    'bergrs',
+    'bin',
+    'bios',
+    'bios2',
+    'bleach',
+    'brc',
+    'brc5',
+    'bright0',
+    'bright1',
+    'brules',
+    'bst',
+    'btf',
+    'built',
+    'bully',
+    'bumble',
+    'c',
+    'calias',
+    'caru',
+    'cbackup',
+    'cc',
+    'cc1',
+    'cc10',
+    'cc100',
+    'cc11',
+    'cc12',
+    'cc13',
+    'cc14',
+    'cc15',
+    'cc16',
+    'cc17',
+    'cc18',
+    'cc19',
+    'cc2',
+    'cc20',
+    'cc21',
+    'cc22',
+    'cc23',
+    'cc24',
+    'cc25',
+    'cc26',
+    'cc27',
+    'cc28',
+    'cc29',
+    'cc3',
+    'cc30',
+    'cc31',
+    'cc32',
+    'cc33',
+    'cc34',
+    'cc35',
+    'cc36',
+    'cc37',
+    'cc38',
+    'cc39',
+    'cc4',
+    'cc40',
+    'cc41',
+    'cc42',
+    'cc43',
+    'cc44',
+    'cc45',
+    'cc46',
+    'cc47',
+    'cc48',
+    'cc49',
+    'cc5',
+    'cc50',
+    'cc51',
+    'cc52',
+    'cc53',
+    'cc54',
+    'cc55',
+    'cc56',
+    'cc57',
+    'cc58',
+    'cc59',
+    'cc6',
+    'cc60',
+    'cc61',
+    'cc62',
+    'cc63',
+    'cc64',
+    'cc65',
+    'cc66',
+    'cc67',
+    'cc68',
+    'cc69',
+    'cc7',
+    'cc70',
+    'cc71',
+    'cc72',
+    'cc73',
+    'cc74',
+    'cc75',
+    'cc76',
+    'cc77',
+    'cc78',
+    'cc79',
+    'cc8',
+    'cc80',
+    'cc81',
+    'cc82',
+    'cc83',
+    'cc84',
+    'cc85',
+    'cc86',
+    'cc87',
+    'cc88',
+    'cc89',
+    'cc9',
+    'cc90',
+    'cc91',
+    'cc92',
+    'cc93',
+    'cc94',
+    'cc95',
+    'cc96',
+    'cc97',
+    'cc98',
+    'cc99',
+    'ccbb',
+    'ccbbr',
+    'ccbots',
+    'ccc',
+    'ccc1',
+    'ccc2',
+    'ccc3',
+    'ccc4',
+    'ccc5',
+    'ccc6',
+    'cccclau',
+    'cccclean',
+    'ccclau',
+    'cccleanup',
+    'cccontext',
+    'ccdaily',
+    'ccdata',
+    'ccdata2',
+    'ccdisable',
+    'ccestimate',
+    'ccfun',
+    'cchrome',
+    'cclatest',
+    'cclau',
+    'cclean',
+    'ccleaner',
+    'cclist',
+    'cclogs',
+    'cco',
+    'ccode',
+    'ccontext',
+    'ccop',
+    'ccope',
+    'ccpatch',
+    'ccreg',
+    'ccschedule',
+    'ccsizes',
+    'ccstable',
+    'ccstatus',
+    'cctemp',
+    'cctemp2',
+    'cctools',
+    'ccwsl',
+    'ccyber',
+    'cdex',
+    'cdpower',
+    'cdroot',
+    'cflare',
+    'cfun',
+    'check-ai',
+    'chris',
+    'chrome-profiles',
+    'cla',
+    'clap',
+    'classuni',
+    'clau',
+    'clau2',
+    'clauand',
+    'clauc',
+    'claud',
+    'claude1',
+    'claude10',
+    'claude100',
+    'claude101',
+    'claude102',
+    'claude103',
+    'claude104',
+    'claude105',
+    'claude106',
+    'claude107',
+    'claude108',
+    'claude109',
+    'claude11',
+    'claude110',
+    'claude111',
+    'claude112',
+    'claude113',
+    'claude114',
+    'claude115',
+    'claude116',
+    'claude117',
+    'claude118',
+    'claude119',
+    'claude12',
+    'claude120',
+    'claude121',
+    'claude122',
+    'claude123',
+    'claude124',
+    'claude125',
+    'claude126',
+    'claude127',
+    'claude128',
+    'claude129',
+    'claude13',
+    'claude130',
+    'claude131',
+    'claude132',
+    'claude133',
+    'claude134',
+    'claude135',
+    'claude136',
+    'claude137',
+    'claude138',
+    'claude139',
+    'claude14',
+    'claude140',
+    'claude141',
+    'claude142',
+    'claude143',
+    'claude144',
+    'claude145',
+    'claude146',
+    'claude147',
+    'claude148',
+    'claude149',
+    'claude15',
+    'claude150',
+    'claude151',
+    'claude152',
+    'claude153',
+    'claude154',
+    'claude155',
+    'claude156',
+    'claude157',
+    'claude158',
+    'claude159',
+    'claude16',
+    'claude160',
+    'claude161',
+    'claude162',
+    'claude163',
+    'claude164',
+    'claude165',
+    'claude166',
+    'claude167',
+    'claude168',
+    'claude169',
+    'claude17',
+    'claude170',
+    'claude171',
+    'claude172',
+    'claude173',
+    'claude174',
+    'claude175',
+    'claude176',
+    'claude177',
+    'claude178',
+    'claude179',
+    'claude18',
+    'claude180',
+    'claude181',
+    'claude182',
+    'claude183',
+    'claude184',
+    'claude185',
+    'claude186',
+    'claude187',
+    'claude188',
+    'claude189',
+    'claude19',
+    'claude190',
+    'claude191',
+    'claude192',
+    'claude193',
+    'claude194',
+    'claude195',
+    'claude196',
+    'claude197',
+    'claude198',
+    'claude199',
+    'claude2',
+    'claude20',
+    'claude200',
+    'claude201',
+    'claude202',
+    'claude203',
+    'claude204',
+    'claude205',
+    'claude206',
+    'claude207',
+    'claude208',
+    'claude209',
+    'claude21',
+    'claude210',
+    'claude211',
+    'claude212',
+    'claude213',
+    'claude214',
+    'claude215',
+    'claude216',
+    'claude217',
+    'claude218',
+    'claude219',
+    'claude22',
+    'claude220',
+    'claude221',
+    'claude222',
+    'claude223',
+    'claude224',
+    'claude225',
+    'claude226',
+    'claude227',
+    'claude228',
+    'claude229',
+    'claude23',
+    'claude230',
+    'claude231',
+    'claude232',
+    'claude233',
+    'claude234',
+    'claude235',
+    'claude236',
+    'claude237',
+    'claude238',
+    'claude239',
+    'claude24',
+    'claude240',
+    'claude241',
+    'claude242',
+    'claude243',
+    'claude244',
+    'claude245',
+    'claude246',
+    'claude247',
+    'claude248',
+    'claude249',
+    'claude25',
+    'claude250',
+    'claude251',
+    'claude252',
+    'claude253',
+    'claude254',
+    'claude255',
+    'claude256',
+    'claude257',
+    'claude258',
+    'claude259',
+    'claude26',
+    'claude260',
+    'claude261',
+    'claude262',
+    'claude263',
+    'claude264',
+    'claude265',
+    'claude266',
+    'claude267',
+    'claude268',
+    'claude269',
+    'claude27',
+    'claude270',
+    'claude271',
+    'claude272',
+    'claude273',
+    'claude274',
+    'claude275',
+    'claude276',
+    'claude277',
+    'claude278',
+    'claude279',
+    'claude28',
+    'claude280',
+    'claude281',
+    'claude282',
+    'claude283',
+    'claude284',
+    'claude285',
+    'claude286',
+    'claude287',
+    'claude288',
+    'claude289',
+    'claude29',
+    'claude290',
+    'claude291',
+    'claude292',
+    'claude293',
+    'claude294',
+    'claude295',
+    'claude296',
+    'claude297',
+    'claude298',
+    'claude299',
+    'claude3',
+    'claude30',
+    'claude300',
+    'claude301',
+    'claude302',
+    'claude303',
+    'claude304',
+    'claude305',
+    'claude306',
+    'claude307',
+    'claude308',
+    'claude309',
+    'claude31',
+    'claude310',
+    'claude311',
+    'claude312',
+    'claude313',
+    'claude314',
+    'claude315',
+    'claude316',
+    'claude317',
+    'claude318',
+    'claude319',
+    'claude32',
+    'claude320',
+    'claude321',
+    'claude322',
+    'claude323',
+    'claude324',
+    'claude325',
+    'claude326',
+    'claude327',
+    'claude328',
+    'claude329',
+    'claude33',
+    'claude330',
+    'claude331',
+    'claude332',
+    'claude333',
+    'claude334',
+    'claude335',
+    'claude336',
+    'claude337',
+    'claude338',
+    'claude339',
+    'claude34',
+    'claude340',
+    'claude341',
+    'claude342',
+    'claude343',
+    'claude344',
+    'claude345',
+    'claude346',
+    'claude347',
+    'claude348',
+    'claude349',
+    'claude35',
+    'claude350',
+    'claude351',
+    'claude352',
+    'claude353',
+    'claude354',
+    'claude355',
+    'claude356',
+    'claude357',
+    'claude358',
+    'claude359',
+    'claude36',
+    'claude360',
+    'claude37',
+    'claude38',
+    'claude39',
+    'claude4',
+    'claude40',
+    'claude41',
+    'claude42',
+    'claude43',
+    'claude44',
+    'claude45',
+    'claude46',
+    'claude47',
+    'claude48',
+    'claude49',
+    'claude5',
+    'claude50',
+    'claude51',
+    'claude52',
+    'claude53',
+    'claude54',
+    'claude55',
+    'claude56',
+    'claude57',
+    'claude58',
+    'claude59',
+    'claude6',
+    'claude60',
+    'claude61',
+    'claude62',
+    'claude63',
+    'claude64',
+    'claude65',
+    'claude66',
+    'claude67',
+    'claude68',
+    'claude69',
+    'claude7',
+    'claude70',
+    'claude71',
+    'claude72',
+    'claude73',
+    'claude74',
+    'claude75',
+    'claude76',
+    'claude77',
+    'claude78',
+    'claude79',
+    'claude8',
+    'claude80',
+    'claude81',
+    'claude82',
+    'claude83',
+    'claude84',
+    'claude85',
+    'claude86',
+    'claude87',
+    'claude88',
+    'claude89',
+    'claude9',
+    'claude90',
+    'claude91',
+    'claude92',
+    'claude93',
+    'claude94',
+    'claude95',
+    'claude96',
+    'claude97',
+    'claude98',
+    'claude99',
+    'claude-router',
+    'claudesize',
+    'claumcp',
+    'claur',
+    'clawhooks',
+    'clawskills',
+    'clawt',
+    'clean',
+    'cleanc',
+    'cleanclau',
+    'cleanf',
+    'cleannn',
+    'cleans',
+    'cleanup',
+    'click',
+    'clml',
+    'close',
+    'closeahk',
+    'closecc',
+    'clu',
+    'cnwsl',
+    'cod',
+    'codash',
+    'codash-global',
+    'codash-status',
+    'codash-stop',
+    'codash-test',
+    'codc',
+    'codeberg',
+    'codex',
+    'codr',
+    'compc',
+    'compcc',
+    'compile',
+    'compilenet',
+    'Complete-GititProcess',
+    'compress',
+    'compressedinstall',
+    'comps',
+    'conip',
+    'conit',
+    'ConvertFrom-BackupDockerCredentialOutput',
+    'ConvertFrom-BackupMenuHistorySegment',
+    'ConvertFrom-NvidUriText',
+    'ConvertTo-BackupDockerBindMountPath',
+    'ConvertTo-BackupDockerSlug',
+    'ConvertTo-NvidMarketingVersion',
+    'cool',
+    'cop',
+    'Copy',
+    'CopyClip',
+    'cpi',
+    'cpit',
+    'cpr',
+    'cpsec',
+    'cpy',
+    'crere',
+    'crestore',
+    'cro',
+    'cspacem',
+    'cspacemax',
+    'ctemp',
+    'curr',
+    'current',
+    'dbo',
+    'dboost',
+    'dc',
+    'dcode',
+    'dcreds',
+    'dcu',
+    'dddefender',
+    'dddesk',
+    'ddefender',
+    'ddesk',
+    'ddev',
+    'ddevit',
+    'ddf',
+    'de1',
+    'de2',
+    'debloat',
+    'defadd',
+    'defender',
+    'defmod1',
+    'defmod2',
+    'defmod3',
+    'defrm',
+    'desc',
+    'desk',
+    'devit',
+    'dfixer',
+    'dim',
+    'DisableSafeBoot',
+    'disadmin',
+    'disahk',
+    'disand',
+    'discord',
+    'disdis',
+    'disks',
+    'dislock',
+    'dislog',
+    'dism++',
+    'display',
+    'dkill',
+    'dkill2',
+    'dkill3',
+    'dkill4',
+    'dkill5',
+    'dlog',
+    'doc',
+    'docdev',
+    'docdev2',
+    'docit',
+    'dock10',
+    'dock2',
+    'dock3',
+    'dock4',
+    'dock5',
+    'dock6',
+    'dock7',
+    'dock8',
+    'dock9',
+    'docker1',
+    'docker10',
+    'docker11',
+    'docker12',
+    'docker13',
+    'docker14',
+    'docker15',
+    'docker16',
+    'docker17',
+    'docker18',
+    'docker19',
+    'docker2',
+    'docker20',
+    'docker21',
+    'docker22',
+    'docker23',
+    'docker24',
+    'docker25',
+    'docker26',
+    'docker27',
+    'docker28',
+    'docker29',
+    'docker3',
+    'docker30',
+    'docker4',
+    'docker5',
+    'docker6',
+    'docker7',
+    'docker8',
+    'docker9',
+    'dockerfix',
+    'dockfix',
+    'dockhub',
+    'dockmax',
+    'dockmin',
+    'doclin',
+    'docsize',
+    'docwin',
+    'doom',
+    'down',
+    'dp',
+    'dps',
+    'dpsa',
+    'dr',
+    'draft',
+    'drc',
+    'dri',
+    'drim',
+    'driverdu',
+    'drivers',
+    'drmariadb',
+    'drun',
+    'ds',
+    'dsh',
+    'dsh2',
+    'dsh3',
+    'dstop',
+    'dsubs',
+    'dsubs2',
+    'dush',
+    'dwslg',
+    'easyre',
+    'edefender',
+    'editfill',
+    'ee',
+    'Enable-WindowsModules',
+    'endis',
+    'endtask',
+    'enmic',
+    'ensand',
+    'Ensure-BackupDockerRepository',
+    'Ensure-BackupDockerRepositorySlug',
+    'Ensure-NvidStoreService',
+    'Ensure-ProfilePowerShellModulePath',
+    'everything',
+    'ewslg',
+    'ex',
+    'exai',
+    'Expand-NvidArchive',
+    'exports',
+    'ext',
+    'ext2',
+    'exubu2',
+    'fagf',
+    'fagp',
+    'ffhome',
+    'ffpop',
+    'ffyt',
+    'filecr',
+    'Find-BackupDockerSourcePathInWorkspace',
+    'finder',
+    'Find-MainExecutable',
+    'fire',
+    'firefox',
+    'fitfit',
+    'fitg',
+    'fix',
+    'fix4',
+    'fixc',
+    'fixe',
+    'fixf',
+    'fixfix',
+    'fixfix2',
+    'fixfixfix',
+    'fixlow',
+    'fixmic',
+    'fixnet',
+    'fixpywin32',
+    'fixtaskbar',
+    'fixtime',
+    'fixupdate',
+    'fixvss',
+    'fixvss2',
+    'fixwim',
+    'fixwin',
+    'fixWin11',
+    'fixwinget',
+    'FixWinStore',
+    'fixwmi',
+    'fixwsl',
+    'flyoobe',
+    'forge',
+    'forge2',
+    'formatf',
+    'frag',
+    'free',
+    'freespace',
+    'freram',
+    'fsec',
+    'fsteep',
+    'fullfixf',
+    'fullpath',
+    'fupdate',
+    'fxs',
+    'g1337x',
+    'gahk',
+    'game',
+    'gapk',
+    'gbeads',
+    'gccleaner',
+    'gchome',
+    'gchrome',
+    'gcl',
+    'gclau',
+    'gclauded',
+    'gcode',
+    'gcodex',
+    'gcompressedinstalled',
+    'gcop',
+    'gcpop',
+    'gcursor',
+    'gdbooster',
+    'gdmcp',
+    'gdotnet',
+    'gdownloads',
+    'gdriverbooster',
+    'gdroid',
+    'geek',
+    'gem',
+    'get7z',
+    'getamd',
+    'getarm',
+    'getasc',
+    'getascen',
+    'getascrm',
+    'Get-BackupComparablePath',
+    'Get-BackupDockerHubErrorResponseText',
+    'Get-BackupDockerHubErrorStatusCode',
+    'Get-BackupDockerHubJwtToken',
+    'Get-BackupDockerHubTagNames',
+    'Get-BackupDockerKnownPathForRepoSlug',
+    'Get-BackupDockerKnownPathMap',
+    'Get-BackupDockerLatestImageRef',
+    'Get-BackupDockerLatestRemoteTag',
+    'Get-BackupDockerLatestTag',
+    'Get-BackupDockerLatestTagNameFromSet',
+    'Get-BackupDockerNextImageRef',
+    'Get-BackupDockerRegisteredSourcePath',
+    'Get-BackupDockerRepository',
+    'Get-BackupDockerRepositoryFromSlug',
+    'Get-BackupDockerRepoSlug',
+    'Get-BackupDockerRepoSlugFromPathText',
+    'Get-BackupDockerRepoSlugFromReference',
+    'Get-BackupDockerSourceMapPath',
+    'Get-BackupDockerSourcePathFromImageRef',
+    'Get-BackupLatestMenuInvocation',
+    'Get-BackupMenuDockerfileContent',
+    'Get-BackupMenuFoldersAtLayer',
+    'Get-BackupMenuHistoryPath',
+    'Get-BackupMenuInvocationDetails',
+    'Get-BackupMenuInvocationFromHistory',
+    'Get-BackupMenuInvocationFromMap',
+    'Get-BackupMenuInvocationMapPath',
+    'Get-BackupMenuRepoSlug',
+    'Get-BackupMenuTraversalSchemaVersion',
+    'getc',
+    'getcho',
+    'Get-ClaudeModel',
+    'Get-ClaudeProjectCwd',
+    'Get-CleanAppName',
+    'getcode',
+    'getdirectx',
+    'getdnet',
+    'getdocker',
+    'getdocker2',
+    'getdotnet',
+    'getf4',
+    'getge',
+    'getjenkins',
+    'getkuma',
+    'Get-InstalledStateToolPython',
+    'Get-InstalledStateToolScript',
+    'Get-MacriumStateToolPython',
+    'Get-MacriumStateToolScript',
+    'getmodel',
+    'Get-NvidAppLaunchState',
+    'Get-NvidAppRuntimeSupport',
+    'Get-NvidConnectedDisplayState',
+    'Get-NvidControlPanelPackage',
+    'Get-NvidDriverHealth',
+    'Get-NvidDriverStoreEntries',
+    'Get-NvidDriverSupportExtractRoot',
+    'Get-NvidOfficialAppInfo',
+    'Get-NvidOfficialDirectXInfo',
+    'Get-NvidOfficialDriverInfo',
+    'Get-NvidOfficialPhysXInfo',
+    'Get-NvidPowerState',
+    'Get-NvidProtocolCommand',
+    'Get-NvidUiAutomationProbe',
+    'Get-NvidUninstallEntry',
+    'getoc',
+    'getoc2',
+    'getollama',
+    'getorch',
+    'getparsec',
+    'getph',
+    'getpip',
+    'Get-PreferredCodexExecutablePath',
+    'Get-ProfileFunctionDependencyNames',
+    'Get-ProfileFunctionMap',
+    'Get-ProfilePsReadLineMergedHistoryPath',
+    'Get-ProfilePsReadLineRootPath',
+    'Get-ProfilePsReadLineSessionHistoryDirectory',
+    'Get-ProfilePsReadLineSessionHistoryPath',
+    'getps7',
+    'getrevo',
+    'getsplunk',
+    'getssh',
+    'Get-UsedSpace',
+    'getuvx',
+    'getvc',
+    'getwinget',
+    'getwmi',
+    'Get-WSL2Memory',
+    'geverything',
+    'gfe',
+    'gfe2',
+    'gfirefox',
+    'gfront',
+    'gg',
+    'ggem',
+    'ggem2',
+    'ggemini2',
+    'ggrwsl',
+    'ggss',
+    'ggss2',
+    'ghe',
+    'ghistory',
+    'gitadd',
+    'gitco',
+    'gitgos',
+    'gitit',
+    'gitit2',
+    'gitlog',
+    'gitpri',
+    'gitpub',
+    'gitpush',
+    'gitt',
+    'gkube',
+    'Global:init',
+    'Global:seit',
+    'Global:setit',
+    'gnet',
+    'gnet3',
+    'gnet5',
+    'gnet6',
+    'gnet7',
+    'gnet8',
+    'gnet9',
+    'gnetpreview',
+    'gobs',
+    'gparsec',
+    'gpipx',
+    'gplaynite',
+    'gprom',
+    'grambox',
+    'greflect',
+    'grevo',
+    'grevouninstaller',
+    'grovo',
+    'grust',
+    'gs1',
+    'gs2',
+    'gs3',
+    'gsavestate',
+    'gscoop',
+    'gshort',
+    'gsnappy',
+    'gsniff',
+    'gsnipp',
+    'gspeedtest',
+    'gssh',
+    'gsteam',
+    'gstremio',
+    'gsystemd',
+    'gtodoist',
+    'gv1',
+    'gwebdock',
+    'gwinpe',
+    'hardware',
+    'HasProp',
+    'hbcd',
+    'hitman',
+    'hot',
+    'html2db',
+    'Import-BackupDockerTar',
+    'Initialize-BackupDockerEnvironment',
+    'Initialize-ProfilePsReadLineHistory',
+    'initit',
+    'installall',
+    'Install-DockerDesktopRobust',
+    'Invoke-BackupDockerImageRestore',
+    'Invoke-BackupDockerInstalledAppRestore',
+    'Invoke-BackupDockerLatestRestore',
+    'Invoke-BackupDockerLatestRestoreForRepoSlug',
+    'Invoke-BackupDockerLegacySharedRestore',
+    'Invoke-BackupDockerRestoreFromMenuHistory',
+    'Invoke-BackupDockerStreamingCommand',
+    'Invoke-BackupMenuAtLayer',
+    'Invoke-BackupMenuBuildPush',
+    'Invoke-BackupMenuForPath',
+    'Invoke-BackupMenuLogged',
+    'Invoke-GititProcess',
+    'Invoke-PreferredCodexCommand',
+    'Invoke-ProfileStartupOnce',
+    'jobtask',
+    'kali',
+    'keyprox',
+    'keyubu',
+    'kil',
+    'killc',
+    'killgame',
+    'killgow',
+    'killmacrium',
+    'killt',
+    'kvrt',
+    'kwsl',
+    'late',
+    'later',
+    'latest',
+    'ld',
+    'lhunter',
+    'lid',
+    'liners',
+    'lines',
+    'linescu',
+    'linespr',
+    'link',
+    'linkedin',
+    'listclau',
+    'listcod',
+    'local:Copy-NvidFile',
+    'local:Copy-NvidFolderContent',
+    'local:Ensure-NvidDirectory',
+    'local:Test-DXInstalled',
+    'lockey',
+    'logit',
+    'logs',
+    'logs2',
+    'longest',
+    'lrestore',
+    'lswebapp',
+    'lu',
+    'mac',
+    'macback',
+    'macres',
+    'macres2',
+    'macro',
+    'maleware',
+    'mas',
+    'mas2',
+    'maxpower',
+    'mcpl',
+    'mcpof',
+    'mcpoff',
+    'mcpon',
+    'mcps',
+    'mcpson',
+    'megaclean',
+    'megadush',
+    'megawsl',
+    'mem',
+    'menu',
+    'menu10',
+    'menu11',
+    'menu12',
+    'menu13',
+    'menu14',
+    'menu15',
+    'menu16',
+    'menu17',
+    'menu18',
+    'menu19',
+    'menu2',
+    'menu20',
+    'menu3',
+    'menu4',
+    'menu5',
+    'menu6',
+    'menu7',
+    'menu8',
+    'menu9',
+    'menuit',
+    'menus',
+    'Merge-ProfilePsReadLineHistoryShards',
+    'mgr',
+    'minpower',
+    'mkc',
+    'mmac',
+    'mmm',
+    'mmsr',
+    'mmvgames',
+    'mmyg',
+    'mp3',
+    'mp4',
+    'mpsl846',
+    'mser',
+    'msr',
+    'muteit',
+    'mvfunc',
+    'mvgames',
+    'mxtok1',
+    'mxtok10',
+    'mxtok2',
+    'mxtok3',
+    'mxtok4',
+    'mxtok5',
+    'mxtok6',
+    'mxtok7',
+    'mxtok8',
+    'mxtok9',
+    'mxtokoff',
+    'myapps',
+    'myass',
+    'myclu',
+    'myfix',
+    'myg',
+    'mygames',
+    'myprof',
+    'myram',
+    'myrlp',
+    'mysiz',
+    'mysiz2',
+    'mysiz3',
+    'n',
+    'n1',
+    'nalias',
+    'ndef',
+    'netboost',
+    'netconnect',
+    'netdefault',
+    'netmax',
+    'nets',
+    'New-BackupDockerTag',
+    'newcd',
+    'newprofile',
+    'nn',
+    'nn2',
+    'nnn',
+    'noccc',
+    'nocccc',
+    'nodecontext1mb',
+    'nodecontext256kb',
+    'nodecontext8mb',
+    'nodenocap',
+    'nodenv',
+    'nomouse',
+    'nvc',
+    'nvid',
+    'nvid2',
+    'nvidia',
+    'nvidia2',
+    'o90',
+    'ob',
+    'oc-fast',
+    'ola',
+    'oll1',
+    'oll10',
+    'oll11',
+    'oll12',
+    'oll13',
+    'oll14',
+    'oll15',
+    'oll16',
+    'oll17',
+    'oll18',
+    'oll19',
+    'oll2',
+    'oll20',
+    'oll21',
+    'oll22',
+    'oll23',
+    'oll24',
+    'oll25',
+    'oll26',
+    'oll27',
+    'oll28',
+    'oll29',
+    'oll3',
+    'oll30',
+    'oll31',
+    'oll32',
+    'oll33',
+    'oll34',
+    'oll35',
+    'oll36',
+    'oll37',
+    'oll38',
+    'oll39',
+    'oll4',
+    'oll40',
+    'oll41',
+    'oll42',
+    'oll43',
+    'oll44',
+    'oll45',
+    'oll46',
+    'oll47',
+    'oll48',
+    'oll49',
+    'oll5',
+    'oll50',
+    'oll51',
+    'oll52',
+    'oll53',
+    'oll54',
+    'oll55',
+    'oll56',
+    'oll57',
+    'oll58',
+    'oll59',
+    'oll6',
+    'oll60',
+    'oll61',
+    'oll62',
+    'oll63',
+    'oll64',
+    'oll65',
+    'oll66',
+    'oll67',
+    'oll68',
+    'oll69',
+    'oll7',
+    'oll70',
+    'oll71',
+    'oll72',
+    'oll73',
+    'oll74',
+    'oll75',
+    'oll76',
+    'oll77',
+    'oll78',
+    'oll79',
+    'oll8',
+    'oll80',
+    'oll81',
+    'oll82',
+    'oll83',
+    'oll84',
+    'oll85',
+    'oll86',
+    'oll87',
+    'oll88',
+    'oll89',
+    'oll9',
+    'oll90',
+    'oll-scan',
+    'onstart',
+    'ope',
+    'Open-NvidDesktopApp',
+    'Open-NvidStartApp',
+    'paste',
+    'path',
+    'performance',
+    'PG',
+    'phonel',
+    'pipip',
+    'pipreq',
+    'pipreq2',
+    'plans',
+    'powerit',
+    'powerplans',
+    'pp',
+    'pp2',
+    'pppp',
+    'Process-Folders',
+    'profile',
+    'profile2',
+    'ps5',
+    'ps527',
+    'ps7',
+    'ps7run',
+    'psv',
+    'pwemod',
+    'py',
+    'pya',
+    'qaccess',
+    'qb',
+    'qbit',
+    'quick-backup',
+    'qw',
+    'qwe',
+    'ram',
+    'ram2',
+    'ram50',
+    'rche',
+    'rebackclau',
+    'reboot',
+    'rebt',
+    'recc',
+    'recc2',
+    'reclau',
+    'recli',
+    'redocker',
+    'refe',
+    'refe2',
+    'refresh',
+    'refresh2',
+    'refresh-disk',
+    'regate',
+    'Register-BackupDockerSourcePath',
+    'Register-BackupMenuInvocation',
+    'Register-NvidPowerLimitTask',
+    'Register-NvidResumeTask',
+    'remenu',
+    'Remove-ForceFully',
+    'Remove-NvidObsoleteDriverStoreEntries',
+    'renode',
+    'renotes',
+    'Repair-StandardWindowsEnvironment',
+    'repeat',
+    'repoint',
+    'repy',
+    'reqb',
+    'rere',
+    'reredock',
+    'rerewsl',
+    'res',
+    'resclau',
+    'rescod',
+    'resed',
+    'Reset-WSL2Config',
+    'reset-wsl-config',
+    'resilio',
+    'resins',
+    'resmac',
+    'Resolve-BackupDockerProjectPath',
+    'Resolve-BackupDockerSourcePathFromRepoSlug',
+    'Resolve-BackupMenuRestoreDestinationPath',
+    'Resolve-ClaudeSession',
+    'ress',
+    'rester',
+    'restoreapps',
+    'restorebackup',
+    'restoref',
+    'restoreit',
+    'restoreit2',
+    'RestoreLinux',
+    'Restore-NvidAppPayload',
+    'Restore-NvidAppRuntimeSupport',
+    'restorestu',
+    'restorewsl',
+    'restorewsl2',
+    'Retry',
+    'reuac',
+    'reubu2',
+    'reup',
+    'revo',
+    'revog',
+    'revolog',
+    'rewemod',
+    'rewsl',
+    'rewsl2',
+    'rgg',
+    'rjob',
+    'rjoy',
+    'rlas',
+    'rlp',
+    'rlp1',
+    'rlp2',
+    'rlp3',
+    'rlp4',
+    'rlpchain',
+    'rlpnext',
+    'rlpprog',
+    'rm7z',
+    'rma',
+    'rmackback',
+    'rmal',
+    'rmback',
+    'rmbackclau',
+    'rmbackcod',
+    'rmboot',
+    'rmcc',
+    'rmccc',
+    'rmd',
+    'rmdefender',
+    'rmdex',
+    'rmdmp',
+    'rmdock',
+    'rmdocker',
+    'rmdone',
+    'rmdotnet',
+    'rmdup',
+    'rmf',
+    'rmfe',
+    'rmfe2',
+    'rmfolders2',
+    'rmfront',
+    'rmfunc',
+    'rmg',
+    'rmgamebar',
+    'rmgemini',
+    'rmk',
+    'rmkali',
+    'rmkube',
+    'rmn',
+    'rmnps',
+    'rmod',
+    'rmp',
+    'rmph',
+    'rmps',
+    'rmqb',
+    'rmram',
+    'rmrlp',
+    'rmrmrm',
+    'rmrust',
+    'rms',
+    'rmscreen',
+    'rmsnap',
+    'rmstart2',
+    'rmthis',
+    'rmu',
+    'rmubu',
+    'rmubu2',
+    'rmvol',
+    'rmwebapp',
+    'rmwebterm',
+    'rmwinold',
+    'robs',
+    'rovo',
+    'rpagefile',
+    'rr',
+    'rr2',
+    'rredocker',
+    'rrewsl',
+    'rrredock',
+    'rrrrrr',
+    'rules',
+    'runahk',
+    'runall',
+    'runsas',
+    'runtec',
+    'Run-WithTimeout',
+    'rws',
+    'rwsl',
+    'Safe',
+    'SafeBoot',
+    'sahk',
+    'sand',
+    'savegames',
+    'saveplex',
+    'savesnap',
+    'savetg',
+    'saveweb',
+    'scan',
+    'scan1',
+    'scan2',
+    'scan3',
+    'scanfast',
+    'scanfull',
+    'scanit',
+    'scp2ubu2',
+    'scpmyg',
+    'scpstu',
+    'screen',
+    'screenit',
+    'Script:Write-Banner',
+    'Script:Write-ManagerHeader',
+    'sdesktop',
+    'search',
+    'search2',
+    'Set-ClaudeResource',
+    'Set-DockerHyperV',
+    'setset',
+    'setup',
+    'setups',
+    'Set-WSL2CustomMemory',
+    'Set-WSL2Memory',
+    'sfc',
+    'sfil',
+    'sfol',
+    'sg',
+    'short',
+    'short2',
+    'short3',
+    'shrink',
+    'shrink2',
+    'siz',
+    'sizes',
+    'sj',
+    'sjob',
+    'skill',
+    'slack',
+    'slink',
+    'slogit',
+    'smisha',
+    'smyapps',
+    'smyg',
+    'snapback',
+    'snapit',
+    'snapres',
+    'sophia',
+    'sophos',
+    'specs',
+    'splex',
+    'sprox',
+    'speedtest',
+    'speedtes',
+    'speedtets',
+    'sppeedtest',
+    'sppedtest',
+    'ss',
+    'ssave',
+    'ssg',
+    'sshec2',
+    'sshplex',
+    'sshtov',
+    'sshubu',
+    'sshubuntu',
+    'sss',
+    'sss2',
+    'ssss',
+    'sssync',
+    'sstov',
+    'stack',
+    'start1',
+    'start2',
+    'startahk',
+    'Start-FastClean',
+    'Start-GititProcess',
+    'startit',
+    'startup',
+    'Start-WSLDistro',
+    'stashit',
+    'steam',
+    'steep',
+    'steep1',
+    'Stop-GititProcess',
+    'stop-router',
+    'stopscan',
+    'stopstart',
+    'stov',
+    'stov2',
+    'streamlit',
+    'stu',
+    'sub',
+    'subit',
+    'subs',
+    'subu',
+    'summ',
+    'superf4',
+    'sus',
+    'sused',
+    'susp',
+    'sweb',
+    'swemod',
+    'syncfiles',
+    'Sync-ProfilePsReadLineHistory',
+    'Sync-WithSpaceMonitoring',
+    'SZ',
+    'taskbar',
+    'telebot',
+    'term',
+    'terminaladmin',
+    'test-all-docker-configs',
+    'Test-BackupDockerRepositoryExists',
+    'testcc',
+    'Test-GittWorkNeeded',
+    'Test-NvidNvDebugDump',
+    'Test-NvidSmi',
+    'Test-WSLDistroRunning',
+    'text',
+    'tg',
+    'thinkoff',
+    'thinkon',
+    'time',
+    'timel',
+    'timer',
+    'tinder',
+    'tindershow',
+    'tmnt',
+    'todoit',
+    'tools',
+    'top',
+    'top100',
+    'tovp',
+    'tovpull',
+    'tovrun',
+    'track',
+    'trim',
+    'tstart',
+    'tweak',
+    'tweek',
+    'uac',
+    'ubu',
+    'ubu2',
+    'ubu3',
+    'ubuntu2',
+    'ubustop',
+    'ultopt',
+    'ultrathink',
+    'umnute',
+    'unem',
+    'unem2',
+    'unem-map',
+    'unfixc',
+    'uni',
+    'uninstall',
+    'unlock',
+    'uopt',
+    'up',
+    'up2',
+    'update',
+    'update2',
+    'Update-Git',
+    'updateit',
+    'updatepip',
+    'updater',
+    'updater2',
+    'updater3',
+    'updates',
+    'upgrade',
+    'upgrader',
+    'upit',
+    'upnpm',
+    'upps',
+    'uptown',
+    'upwing',
+    'used2',
+    'vcx',
+    'ventoy',
+    'venv',
+    'venv11',
+    'venvit',
+    'venvit2',
+    'vid',
+    'volume',
+    'vscodext',
+    'w10gb',
+    'w11gb',
+    'w12gb',
+    'w13gb',
+    'w14gb',
+    'w15gb',
+    'w16gb',
+    'w1gb',
+    'w2gb',
+    'w3gb',
+    'w4gb',
+    'w5gb',
+    'w6gb',
+    'w7gb',
+    'w8gb',
+    'w9gb',
+    'Wait-BackupDockerDesktopReady',
+    'waitit',
+    'Wait-NvidWindow',
+    'wall',
+    'wall2',
+    'wallp',
+    'walls',
+    'wallst',
+    'webapp',
+    'webhtml',
+    'webterm',
+    'wemod',
+    'win',
+    'winchk',
+    'windowsapps',
+    'winfix',
+    'wingi',
+    'wingit',
+    'wingit2',
+    'wings',
+    'wingup',
+    'winmenu',
+    'winrst',
+    'winupg',
+    'winupg2',
+    'wise',
+    'wish',
+    'wmpatch',
+    'word',
+    'Write-GititLogDelta',
+    'ws',
+    'ws2',
+    'wsbug',
+    'wse',
+    'wsgg',
+    'wslfix',
+    'wslfull',
+    'wslgg',
+    'wslmax',
+    'wsls',
+    'wsls1',
+    'wsls2',
+    'wsrm',
+    'ytapi',
+    'ytmp',
+    'ytmp4',
+    'ytp',
+    'ytp2',
+    'ytp3',
+    'yyyt',
+    'ZZZ_WRAPPER_14'
+)
+
+$script:FullProfileProxy = {
+    $calledName = $MyInvocation.MyCommand.Name
+    if (-not $calledName -or $calledName -eq '&') {
+        $calledName = $MyInvocation.InvocationName
+    }
+    if (-not $calledName -or $calledName -eq '&') {
+        throw 'Full profile proxy could not determine the command name to reload.'
+    }
+    Load-FullPowerShellProfile
+    & (Get-Command $calledName -CommandType Function -ErrorAction Stop) @args
+}
+
+foreach ($functionName in $script:FullProfileFunctionNames) {
+    if ($functionName -in @('Load-FullPowerShellProfile', 'fullprofile', 'nomouse')) { continue }
+    Set-Item -Path "Function:\global:$functionName" -Value $script:FullProfileProxy -Force
+}
+Set-Item -Path 'Function:\global:myfix' -Value $script:ProfileMyFixOverride -Force
+Set-Item -Path 'Function:\global:qaccess' -Value $script:ProfileQAccessOverride -Force
+Set-Item -Path 'Function:\global:fixfixfixfix' -Value $script:ProfileFixFixFixFixOverride -Force
+
+function global:remenu {
+    Load-FullPowerShellProfile
+    $script = 'F:\study\Learning\01\01\Shells\powershell\profile-functions\shells\powershell\menu-tools\Remenu\Invoke-remenu.ps1'
+    if (-not (Test-Path -LiteralPath $script -PathType Leaf)) {
+        throw "remenu script not found: $script"
+    }
+    & $script @args
+}
+
+function global:backcod {
+    $repoRoot = 'F:\study\repos\ai-ml\AI_and_Machine_Learning\Artificial_Intelligence'
+    $relativeScript = 'cli/codex/backup/backup-codex.ps1'
+    $scriptPath = Join-Path $repoRoot ($relativeScript -replace '/', '\')
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf) -and (Test-Path -LiteralPath (Join-Path $repoRoot '.git'))) {
+        $scriptDir = Split-Path -Parent $scriptPath
+        if (-not (Test-Path -LiteralPath $scriptDir -PathType Container)) {
+            $null = New-Item -ItemType Directory -Path $scriptDir -Force
+        }
+        & cmd.exe /c "git -C `"$repoRoot`" show HEAD:$relativeScript > `"$scriptPath`"" 2>$null
+        if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+            Write-Host "backcod: restored missing script from git: $scriptPath" -ForegroundColor Yellow
+        }
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        Write-Warning "backcod: script not found and could not be restored: $scriptPath"
+        return
+    }
+    & $scriptPath -Force @args
+}
+
+function global:cleanc {
+    $script = 'F:\study\Learning\01\01\Shells\powershell\profile-functions\windows\cleanup\system-clean\CleanCSystemCleanup\Invoke-cleanc.ps1'
+    if (-not (Test-Path -LiteralPath $script -PathType Leaf)) {
+        throw "cleanc script not found: $script"
+    }
+    . $script @args
+}
+
+function global:bacter {
+    $settingsPath = "C:\Users\micha\AppData\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
+    $backupPath = "F:\backup\windowsapps\profile\settings.json"
+    $backupDir = Split-Path -Parent $backupPath
+    if (-not (Test-Path -LiteralPath $backupDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+    }
+    Copy-Item -LiteralPath $settingsPath -Destination $backupPath -Force
+}
+
+function global:rester {
+    $settingsPath = "C:\Users\micha\AppData\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
+    $backupPath = "F:\backup\windowsapps\profile\settings.json"
+    $backupDir = Split-Path -Parent $backupPath
+    $source = $backupPath
+
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        $localState = Split-Path -Parent $settingsPath
+        $source = Get-ChildItem -LiteralPath $localState -Filter 'settings.json.before-terminal-fast-*.bak' -File -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -ExpandProperty FullName -First 1
+    }
+
+    if (-not $source -or -not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        if (-not (Test-Path -LiteralPath $settingsPath -PathType Leaf)) {
+            throw "rester could not find Windows Terminal settings at '$backupPath' or '$settingsPath'."
+        }
+        $source = $settingsPath
+    }
+
+    Copy-Item -LiteralPath $source -Destination $settingsPath -Force
+    $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
+    $settings.defaultProfile = "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}"
+    $settings | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $settingsPath -Encoding UTF8
+
+    if (-not (Test-Path -LiteralPath $backupDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+    }
+    Copy-Item -LiteralPath $settingsPath -Destination $backupPath -Force
+    Write-Host "Windows Terminal settings restored. Default profile: Windows PowerShell v5." -ForegroundColor Green
+}
+
+function global:upgrader {
+    $script = 'F:\study\Learning\01\01\Shells\powershell\profile-functions\dev-toolchain\package-managers\global-upgrader\GlobalToolchainUpgrader\Invoke-upgrader.ps1'
+    if (-not (Test-Path -LiteralPath $script -PathType Leaf)) {
+        throw "upgrader script not found: $script"
+    }
+    . $script @args
+}
+
+function global:wingup {
+    Repair-StandardWindowsProcessEnvironment
+    $script = 'F:\study\Learning\01\01\Shells\powershell\winget\WingetAutoUptgadeAll\Invoke-WingetAutoUpgradeAll.ps1'
+    if (-not (Test-Path -LiteralPath $script -PathType Leaf)) {
+        throw "wingup script not found: $script"
+    }
+    . $script @args
+}
+
+function global:Get-ProfileFunctionSourcePaths {
+    $paths = @(
+        $script:FullProfileLibraryPath,
+        'C:\Users\micha\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.full.ps1',
+        $PROFILE,
+        'C:\Users\micha\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1',
+        'C:\Users\micha\Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
+    )
+
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($path in $paths) {
+        if ([string]::IsNullOrWhiteSpace($path)) { continue }
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+        $resolved = (Resolve-Path -LiteralPath $path).ProviderPath
+        if ($seen.Add($resolved)) { $resolved }
+    }
+}
+
+function global:Get-ProfileFunctionMap {
+    param(
+        [string[]]$ProfilePath
+    )
+
+    if (-not $ProfilePath -or $ProfilePath.Count -eq 0) {
+        $ProfilePath = @(Get-ProfileFunctionSourcePaths)
+    }
+
+    $functionMap = New-Object 'System.Collections.Hashtable' ([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($path in $ProfilePath) {
+        if ([string]::IsNullOrWhiteSpace($path) -or -not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+
+        $parseErrors = $null
+        $tokens = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$parseErrors)
+        if ($parseErrors -and $parseErrors.Count -gt 0) {
+            throw "Cannot parse profile function source '$path': $($parseErrors[0].Message)"
+        }
+
+        $ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $true) | ForEach-Object {
+            $lookupName = $_.Name -replace '^(?i:global:)', ''
+            $functionMap[$lookupName] = $_
+        }
+    }
+
+    $functionMap
+}
+
+function global:Get-ProfileFunctionDependencyNames {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.Language.FunctionDefinitionAst]$FunctionAst,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable]$FunctionMap
+    )
+
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+    $FunctionAst.FindAll({ param($node) $node -is [System.Management.Automation.Language.CommandAst] }, $true) | ForEach-Object {
+        $commandName = $_.GetCommandName()
+        if ([string]::IsNullOrWhiteSpace($commandName)) { return }
+        $lookupName = $commandName -replace '^(?i:global:)', ''
+        if ($FunctionMap.ContainsKey($lookupName) -and $seen.Add($lookupName)) {
+            $lookupName
+        }
+    }
+}
+
+function global:cfun {
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$FunctionName
+    )
+
+    $functionMap = Get-ProfileFunctionMap
+    $lookupName = $FunctionName -replace '^(?i:global:)', ''
+    if (-not $functionMap.ContainsKey($lookupName)) {
+        Write-Warning "Function '$FunctionName' not found in profile sources: $((Get-ProfileFunctionSourcePaths) -join '; ')"
+        return
+    }
+
+    $functionMap[$lookupName].Extent.Text.TrimEnd()
+}
+
+function global:ccfun {
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$FunctionName
+    )
+
+    $functionMap = Get-ProfileFunctionMap
+    $lookupName = $FunctionName -replace '^(?i:global:)', ''
+    if (-not $functionMap.ContainsKey($lookupName)) {
+        Write-Warning "Function '$FunctionName' not found in profile sources: $((Get-ProfileFunctionSourcePaths) -join '; ')"
+        return
+    }
+
+    $ordered = New-Object 'System.Collections.Generic.List[string]'
+    $visited = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+
+    function Add-ProfileFunctionDependency {
+        param([string]$Name)
+
+        $normalizedName = $Name -replace '^(?i:global:)', ''
+        if (-not $functionMap.ContainsKey($normalizedName)) { return }
+        if (-not $visited.Add($normalizedName)) { return }
+
+        foreach ($dependencyName in Get-ProfileFunctionDependencyNames -FunctionAst $functionMap[$normalizedName] -FunctionMap $functionMap) {
+            Add-ProfileFunctionDependency -Name $dependencyName
+        }
+
+        $ordered.Add($normalizedName) | Out-Null
+    }
+
+    foreach ($dependencyName in Get-ProfileFunctionDependencyNames -FunctionAst $functionMap[$lookupName] -FunctionMap $functionMap) {
+        Add-ProfileFunctionDependency -Name $dependencyName
+    }
+
+    foreach ($name in $ordered) {
+        $functionMap[$name].Extent.Text.TrimEnd()
+        ''
+    }
+}
+
+function global:profile {
+    & 'F:\study\Devops\backup\backup\profile\profile.ps1' @args
+}
+
+function global:profile2 {
+    & 'F:\study\Devops\backup\backup\profile\profile2.ps1' @args
+}
+
+function global:allstart {
+    $script = 'F:\study\Learning\01\01\Shells\powershell\profile-functions\windows\startup\session-bootstrap\AllStartBootstrap\Invoke-allstart.ps1'
+    if (-not (Test-Path -LiteralPath $script -PathType Leaf)) {
+        throw "allstart script not found: $script"
+    }
+    . $script @args
+}
+
+function global:allstart2 {
+    $script = 'F:\study\Learning\01\01\Shells\powershell\profile-functions\windows\startup\session-bootstrap\AllStartTwoBootstrap\Invoke-allstart2.ps1'
+    if (-not (Test-Path -LiteralPath $script -PathType Leaf)) {
+        throw "allstart2 script not found: $script"
+    }
+    . $script @args
+}
+
+function global:1start {
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments = $true)]
+        [string[]]$Targets
+    )
+
+    $script = 'F:\study\Learning\01\01\Shells\powershell\profile-functions\windows\startup\session-bootstrap\Invoke-startup-custom-manager.ps1'
+    if (-not (Test-Path -LiteralPath $script -PathType Leaf)) {
+        throw "1start script not found: $script"
+    }
+    $targetList = @($Targets | ForEach-Object { ([string]$_).Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($targetList.Count -eq 0) {
+        throw '1start requires at least one target path or app name.'
+    }
+    & $script -Action Add -Value $targetList
+}
+
+function global:2start {
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments = $true)]
+        [string[]]$Targets
+    )
+
+    $script = 'F:\study\Learning\01\01\Shells\powershell\profile-functions\windows\startup\session-bootstrap\Invoke-startup-custom-manager.ps1'
+    if (-not (Test-Path -LiteralPath $script -PathType Leaf)) {
+        throw "2start script not found: $script"
+    }
+    $targetList = @($Targets | ForEach-Object { ([string]$_).Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($targetList.Count -eq 0) {
+        throw '2start requires at least one target path or app name.'
+    }
+    & $script -Action Remove -Value $targetList
+}
+
+function global:start1 { 1start @args }
+function global:start2 { 2start @args }
+
+Set-Alias -Name run -Value Invoke-ChainedCommand -Force -ErrorAction SilentlyContinue
+Set-Alias -Name x -Value Invoke-ChainedCommand -Force -ErrorAction SilentlyContinue
+Set-Alias -Name gitgo -Value gitco -Force -ErrorAction SilentlyContinue
+
+if ($script:ProfileIsInteractiveConsole -and -not $env:OPENCLAW_EXEC) {
+    Write-Host "[Profile loaded in $($script:_prof_sw.ElapsedMilliseconds)ms]" -ForegroundColor DarkGray
+}
+
+function global:Import-ProfileChocolatey {
+    $root = if ([string]::IsNullOrWhiteSpace($env:ChocolateyInstall)) { 'C:\ProgramData\chocolatey' } else { $env:ChocolateyInstall }
+    $profilePath = Join-Path $root 'helpers\chocolateyProfile.psm1'
+    if (Test-Path -LiteralPath $profilePath -PathType Leaf) {
+        Import-Module $profilePath -ErrorAction SilentlyContinue
+    }
+}
+
+function global:Update-SessionEnvironment {
+    Import-ProfileChocolatey
+    $command = Get-Command Update-SessionEnvironment -CommandType Cmdlet -ErrorAction SilentlyContinue
+    if (-not $command) {
+        throw 'Chocolatey Update-SessionEnvironment is not available.'
+    }
+    & $command @args
+}
+
+Set-Alias -Name refreshenv -Value Update-SessionEnvironment -Force -ErrorAction SilentlyContinue
+
+function global:choco {
+    Import-ProfileChocolatey
+    $command = Get-Command choco.exe -CommandType Application -ErrorAction SilentlyContinue
+    if (-not $command) {
+        $command = Get-Command choco -CommandType Application -ErrorAction Stop
+    }
+    & $command.Source @args
+}
+function rmboot2 {    bcdedit /set "{bootmgr}" timeout 0 }
+
+function speed {     gspeedtest; speedtest }
+
+function 3xfixc {    F:\study\projects\3xfixc\3xfixc-chkdsk3.ps1 }
+
+function gethermes {    cd F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\hermes\AutoSetupHermes; ws 'as' }
+
+
+# Import the Chocolatey Profile that contains the necessary code to enable
+# tab-completions to function for `choco`.
+# Be aware that if you are missing these lines from your profile, tab completion
+# for `choco` will not function.
+# See https://ch0.co/tab-completion for details.
+$ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+if (Test-Path($ChocolateyProfile)) {
+  Import-Module "$ChocolateyProfile"
+}
+function global:backher {
+    [CmdletBinding()]
+    param(
+        [string] $Distro = 'ubuntu',
+        [string] $BackupRoot = 'F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\hermes\AutoBackRes\backups',
+        [switch] $PlanOnly,
+        [switch] $RestartGateway,
+        [switch] $NoRestartGateway,
+        [switch] $Legacy,
+        [Parameter(ValueFromRemainingArguments = $true)][string[]] $BackherArgs
+    )
+    $legacyScript = 'F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\hermes\AutoBackRes\backup-hermes-wsl2.ps1'
+    if ($Legacy -or ($BackherArgs -and $BackherArgs.Count -gt 0)) {
+        & $legacyScript @BackherArgs
+        return
+    }
+
+    $wslExe = Join-Path $env:SystemRoot 'System32\wsl.exe'
+    if (-not (Test-Path -LiteralPath $wslExe -PathType Leaf)) { $wslExe = 'wsl.exe' }
+    $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $backupDir = Join-Path $BackupRoot $stamp
+    New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+    $drive = [System.IO.Path]::GetFullPath($backupDir).Substring(0,1).ToLowerInvariant()
+    $rest = [System.IO.Path]::GetFullPath($backupDir).Substring(3).Replace('\','/')
+    $backupDirWsl = "/mnt/$drive/$rest"
+
+    $toolDir = Join-Path $backupDir 'windows-tool-files'
+    New-Item -ItemType Directory -Path $toolDir -Force | Out-Null
+    $toolRoot = Split-Path -Parent $legacyScript
+    'a.sh','backup-hermes-wsl2.ps1','build-HermesTray.ps1','enable-windows-startup.ps1','hermes-command-guard.sh','hermes-tray-health.sh','HermesDashboard.html','HermesTray.cs','HermesTray.exe','parse-and-validate-check.ps1','purge-backups-fast.ps1','README.md','restore-hermes-wsl2.ps1','resume.sh','run-hermes-wsl2-gateway.ps1','run-HermesTray.ps1','sandbox-diagnose.ps1','sandbox-log-diagnose.ps1' | ForEach-Object {
+        $source = Join-Path $toolRoot $_
+        if (Test-Path -LiteralPath $source -PathType Leaf) { Copy-Item -LiteralPath $source -Destination (Join-Path $toolDir $_) -Force }
+    }
+    Get-ChildItem -LiteralPath $toolDir -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name | Set-Content -LiteralPath (Join-Path $toolDir 'windows-tool-files.txt') -Encoding UTF8
+
+    $bash = @'
+set -euo pipefail
+backup_dir="$1"
+plan_only="$2"
+mkdir -p "$backup_dir"
+path_list="$backup_dir/hermes-wsl-data.paths.txt"
+summary="$backup_dir/hermes-wsl-data.summary.txt"
+archive="$backup_dir/hermes-wsl-data.tar.gz"
+: > "$path_list"
+add_path() {
+  local p="$1"
+  [ -n "$p" ] || return 0
+  [ -e "$p" ] || return 0
+  printf '%s\n' "${p#/}" >> "$path_list"
+}
+# Future-proof Hermes discovery: include every current/future Hermes home for every Linux user,
+# plus service/profile locations commonly used by clone bots and workspaces.
+for p in \
+  /home/*/.hermes /home/*/.hermes-* \
+  /root/.hermes /root/.hermes-* \
+  /opt/hermes /opt/hermes-* /srv/hermes /srv/hermes-* \
+  /home/*/.config/hermes /home/*/.config/hermes-* /home/*/.config/hermes-setup \
+  /home/*/.local/state/hermes /home/*/.local/state/hermes-* \
+  /home/*/.local/share/hermes /home/*/.local/share/hermes-* \
+  /home/*/.codex /home/*/.config/uv /home/*/.local/bin/hermes /home/*/.local/bin/node \
+  /home/*/.local/bin/npm /home/*/.local/bin/npx /home/*/.local/bin/corepack \
+  /home/*/.local/bin/uv /home/*/.local/bin/uvx /home/*/.local/share/uv \
+  /home/*/.cache/ms-playwright /home/*/.cache/uv \
+  /home/*/.bashrc /home/*/.profile /home/*/.bash_profile; do
+  add_path "$p"
+done
+# Also include live HERMES_HOME values from running bot/gateway processes, so custom future
+# locations are picked up when a bot is active even if it does not follow the ~/.hermes-* convention.
+for env in /proc/[0-9]*/environ; do
+  [ -r "$env" ] || continue
+  tr '\0' '\n' < "$env" 2>/dev/null | sed -n 's/^HERMES_HOME=//p'
+done | sort -u | while IFS= read -r p; do add_path "$p"; done
+sort -u -o "$path_list" "$path_list"
+if [ ! -s "$path_list" ]; then echo 'No Hermes-related WSL paths found' >&2; exit 20; fi
+{
+  echo '== full Hermes/all-bot archive path list =='
+  cat "$path_list"
+  echo '== selected sizes =='
+  while IFS= read -r p; do du -sh "/$p" 2>/dev/null || true; done < "$path_list"
+} > "$summary"
+if [ "$plan_only" = "1" ]; then cat "$summary"; exit 0; fi
+if command -v pigz >/dev/null 2>&1; then compressor='pigz -1'; else compressor='gzip -1'; fi
+tar_code=0
+tar --xattrs --acls --numeric-owner --ignore-failed-read --warning=no-file-changed --use-compress-program="$compressor" \
+  --exclude='home/*/.hermes/gateway.lock' --exclude='home/*/.hermes/gateway.pid' \
+  --exclude='home/*/.hermes-*/gateway.lock' --exclude='home/*/.hermes-*/gateway.pid' \
+  --exclude='root/.hermes/gateway.lock' --exclude='root/.hermes/gateway.pid' \
+  --exclude='root/.hermes-*/gateway.lock' --exclude='root/.hermes-*/gateway.pid' \
+  -C / -cpf "$archive" -T "$path_list" || tar_code=$?
+if [ "$tar_code" -gt 1 ]; then exit "$tar_code"; fi
+tar -tzf "$archive" >/tmp/backher-listing.$$; entries=$(wc -l </tmp/backher-listing.$$); rm -f /tmp/backher-listing.$$
+printf 'Archive integrity verified: %s entries\n' "$entries"
+'@
+    $runScript = Join-Path $backupDir 'backher-fast.sh'
+    [System.IO.File]::WriteAllText($runScript, ($bash -replace "`r`n", "`n" -replace "`r", "`n"), [System.Text.Encoding]::ASCII)
+    $runDrive = [System.IO.Path]::GetFullPath($runScript).Substring(0,1).ToLowerInvariant()
+    $runRest = [System.IO.Path]::GetFullPath($runScript).Substring(3).Replace('\','/')
+    & $wslExe -d $Distro -u root -- bash "/mnt/$runDrive/$runRest" $backupDirWsl ($(if ($PlanOnly) { '1' } else { '0' }))
+    if ($LASTEXITCODE -ne 0) { throw "backher WSL archive step failed with exit code $LASTEXITCODE" }
+    if ($PlanOnly) { return }
+
+    $archive = Join-Path $backupDir 'hermes-wsl-data.tar.gz'
+    $manifest = [ordered]@{
+        created_at = (Get-Date).ToString('o')
+        distro = $Distro
+        backup_dir = $backupDir
+        backup_kind = 'hermes-wsl-all-bots-fast'
+        archive = 'hermes-wsl-data.tar.gz'
+        archive_sha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
+        archive_bytes = (Get-Item -LiteralPath $archive).Length
+        restore_command = 'resher'
+        includes = @(Get-Content -LiteralPath (Join-Path $backupDir 'hermes-wsl-data.paths.txt') | ForEach-Object { $_.ToString() })
+        compression = 'pigz-or-gzip-level-1'
+        windows_side_files = @(Get-ChildItem -LiteralPath $toolDir -File | Where-Object { $_.Name -ne 'windows-tool-files.txt' } | Select-Object -ExpandProperty Name)
+    }
+    $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $backupDir 'manifest.json') -Encoding UTF8
+    $stamp | Set-Content -LiteralPath (Join-Path $BackupRoot 'LATEST.txt') -Encoding ASCII
+    if ($RestartGateway -and -not $NoRestartGateway) {
+        $resume = Join-Path $toolRoot 'resume.sh'
+        if (Test-Path -LiteralPath $resume -PathType Leaf) {
+            $resumeDrive = [System.IO.Path]::GetFullPath($resume).Substring(0,1).ToLowerInvariant()
+            $resumeRest = [System.IO.Path]::GetFullPath($resume).Substring(3).Replace('\','/')
+            & $wslExe -d $Distro -u root -- bash "/mnt/$resumeDrive/$resumeRest"
+        }
+    }
+    Write-Host "BACKUP_ID=$stamp"
+    Write-Host "BACKUP_DIR=$backupDir"
+    Write-Host "HERMES_ARCHIVE=$archive"
+    Write-Host ("COVERAGE=all discovered /home/*/.hermes* bot homes plus live HERMES_HOME paths and Hermes CLI/session/cache/state/tooling paths; {0} root paths" -f $manifest.includes.Count)
+}
+
+function global:resher {
+    [CmdletBinding()]
+    param(
+        [string] $BackupId = 'latest',
+        [string] $Distro = 'ubuntu',
+        [string] $BackupRoot = 'F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\hermes\AutoBackRes\backups',
+        [switch] $ValidateOnly,
+        [switch] $PlanOnly,
+        [switch] $NoTelegramProbe,
+        [switch] $SlashCommandsOnly,
+        [switch] $Legacy,
+        [Parameter(ValueFromRemainingArguments = $true)][string[]] $ResherArgs
+    )
+    $legacyScript = 'F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\hermes\AutoBackRes\restore-hermes-wsl2.ps1'
+    if ($Legacy -or $SlashCommandsOnly -or ($ResherArgs -and $ResherArgs.Count -gt 0)) {
+        if ($SlashCommandsOnly) { & $legacyScript -BackupId $BackupId -Distro $Distro -BackupRoot $BackupRoot -ValidateOnly:$ValidateOnly -NoTelegramProbe:$NoTelegramProbe -SlashCommandsOnly; return }
+        & $legacyScript @ResherArgs
+        return
+    }
+
+    $wslExe = Join-Path $env:SystemRoot 'System32\wsl.exe'
+    if (-not (Test-Path -LiteralPath $wslExe -PathType Leaf)) { $wslExe = 'wsl.exe' }
+    if ($BackupId -eq 'latest') {
+        $latest = Join-Path $BackupRoot 'LATEST.txt'
+        if (-not (Test-Path -LiteralPath $latest -PathType Leaf)) { throw "LATEST.txt not found under $BackupRoot" }
+        $BackupId = (Get-Content -LiteralPath $latest -Raw).Trim()
+    }
+    $backupDir = Join-Path $BackupRoot $BackupId
+    if (-not (Test-Path -LiteralPath $backupDir -PathType Container)) { throw "Backup directory not found: $backupDir" }
+    $archive = Join-Path $backupDir 'hermes-wsl-data.tar.gz'
+    $pathList = Join-Path $backupDir 'hermes-wsl-data.paths.txt'
+    $manifestPath = Join-Path $backupDir 'manifest.json'
+    if (-not (Test-Path -LiteralPath $archive -PathType Leaf)) { throw "Missing Hermes data archive: $archive" }
+    if (-not (Test-Path -LiteralPath $pathList -PathType Leaf)) { throw "Missing Hermes data path list: $pathList" }
+    if (Test-Path -LiteralPath $manifestPath -PathType Leaf) {
+        $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+        if ($manifest.archive_sha256) {
+            $actual = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
+            if ($actual -ine $manifest.archive_sha256) { throw 'Hermes data archive hash mismatch' }
+        }
+    }
+
+    $drive = [System.IO.Path]::GetFullPath($backupDir).Substring(0,1).ToLowerInvariant()
+    $rest = [System.IO.Path]::GetFullPath($backupDir).Substring(3).Replace('\','/')
+    $backupDirWsl = "/mnt/$drive/$rest"
+    $bash = @'
+set -euo pipefail
+backup_dir="$1"
+mode="$2"
+archive="$backup_dir/hermes-wsl-data.tar.gz"
+path_list="$backup_dir/hermes-wsl-data.paths.txt"
+while IFS= read -r p; do
+  p="${p%$'\r'}"
+  [ -n "$p" ] || continue
+  case "$p" in
+    home/*/.hermes|home/*/.hermes/*|home/*/.hermes-*|home/*/.hermes-*/*|root/.hermes|root/.hermes/*|root/.hermes-*|root/.hermes-*/*|opt/hermes|opt/hermes/*|opt/hermes-*|opt/hermes-*/*|srv/hermes|srv/hermes/*|srv/hermes-*|srv/hermes-*/*|home/*/.codex|home/*/.codex/*|home/*/.config/hermes|home/*/.config/hermes/*|home/*/.config/hermes-*|home/*/.config/hermes-*/*|home/*/.config/uv|home/*/.config/uv/*|home/*/.local/bin/hermes|home/*/.local/bin/node|home/*/.local/bin/npm|home/*/.local/bin/npx|home/*/.local/bin/corepack|home/*/.local/bin/uv|home/*/.local/bin/uvx|home/*/.local/state/hermes|home/*/.local/state/hermes/*|home/*/.local/state/hermes-*|home/*/.local/state/hermes-*/*|home/*/.local/share/hermes|home/*/.local/share/hermes/*|home/*/.local/share/hermes-*|home/*/.local/share/hermes-*/*|home/*/.local/share/uv|home/*/.local/share/uv/*|home/*/.cache/ms-playwright|home/*/.cache/ms-playwright/*|home/*/.cache/uv|home/*/.cache/uv/*|home/*/.bashrc|home/*/.profile|home/*/.bash_profile) ;;
+    *) echo "Refusing unsafe restore path from list: $p" >&2; exit 40 ;;
+  esac
+done < "$path_list"
+if [ "$mode" = "plan" ]; then echo '== full restore path list =='; cat "$path_list"; exit 0; fi
+tar -tzf "$archive" >/tmp/resher-listing.$$; entries=$(wc -l </tmp/resher-listing.$$); rm -f /tmp/resher-listing.$$
+echo "Restore input verified: $entries archive entries"
+if [ "$mode" = "validate" ]; then exit 0; fi
+tar --xattrs --acls --numeric-owner --overwrite --delay-directory-restore -C / -xzpf "$archive"
+sync
+'@
+    $mode = 'restore'
+    if ($PlanOnly) { $mode = 'plan' }
+    if ($ValidateOnly) { $mode = 'validate' }
+    $runScript = Join-Path $backupDir 'resher-fast.sh'
+    [System.IO.File]::WriteAllText($runScript, ($bash -replace "`r`n", "`n" -replace "`r", "`n"), [System.Text.Encoding]::ASCII)
+    $runDrive = [System.IO.Path]::GetFullPath($runScript).Substring(0,1).ToLowerInvariant()
+    $runRest = [System.IO.Path]::GetFullPath($runScript).Substring(3).Replace('\','/')
+    & $wslExe -d $Distro -u root -- bash "/mnt/$runDrive/$runRest" $backupDirWsl $mode
+    if ($LASTEXITCODE -ne 0) { throw "resher WSL restore step failed with exit code $LASTEXITCODE" }
+    if ($PlanOnly -or $ValidateOnly) { return }
+
+    $toolBackupDir = Join-Path $backupDir 'windows-tool-files'
+    if (Test-Path -LiteralPath $toolBackupDir -PathType Container) {
+        Get-ChildItem -LiteralPath $toolBackupDir -File | Where-Object { $_.Name -ne 'windows-tool-files.txt' } | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination (Join-Path (Split-Path -Parent $legacyScript) $_.Name) -Force
+        }
+    }
+    $resume = Join-Path (Split-Path -Parent $legacyScript) 'resume.sh'
+    if (Test-Path -LiteralPath $resume -PathType Leaf) {
+        $resumeDrive = [System.IO.Path]::GetFullPath($resume).Substring(0,1).ToLowerInvariant()
+        $resumeRest = [System.IO.Path]::GetFullPath($resume).Substring(3).Replace('\','/')
+        & $wslExe -d $Distro -u root -- bash "/mnt/$resumeDrive/$resumeRest"
+    }
+    Write-Host "RESTORED_BACKUP_ID=$BackupId"
+    Write-Host ("RESTORE_MODE=full overlay restore of all archived Hermes bot homes/sessions/chats/workspaces; use -SlashCommandsOnly only when explicitly wanted")
+}
+
+
+function her {    wsl -d ubuntu -u root -- bash /mnt/f/study/AI_ML/AI_and_Machine_Learning/Artificial_Intelligence/hermes/AutoSetupHermes/resume.sh }
+
+function rmbackher {     F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\hermes\AutoBackRes\purge-backups-fast.ps1; backher }
+
+
+
+
+function gsandbox {   $exe="$env:windir\System32\WindowsSandbox.exe"; if(Test-Path $exe){Start-Process $exe}else{Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command Enable-WindowsOptionalFeature -Online -FeatureName Containers-DisposableClientVM -All"} }
+
+function cdher {    cd  F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\hermes }
+
+function crash {    reg add "HKLM\SYSTEM\CurrentControlSet\Services\i8042prt\Parameters" /v CrashOnCtrlScroll /t REG_DWORD /d 1 /f; reg add "HKLM\SYSTEM\CurrentControlSet\Services\kbdhid\Parameters" /v CrashOnCtrlScroll /t REG_DWORD /d 1 /f; reg add "HKLM\SYSTEM\CurrentControlSet\Services\hyperkbd\Parameters" /v CrashOnCtrlScroll /t REG_DWORD /d 1 /f; reg add "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl" /v AutoReboot /t REG_DWORD /d 1 /f; reg add "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl" /v CrashDumpEnabled /t REG_DWORD /d 0 /f }
+
+function backitup {    menu F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\hermes; menu C:\Users\micha\Documents; menu C:\Users\micha\Desktop; menu F:\backup\codex; menu F:\backup\linux; menu F:\backup\obsidion; menu F:\backup\gamesaves; menu F:\backup\windowsapps\install; menu F:\backup\windowsapps\installed; menu F:\backup\windowsapps\profile; menu F:\backup\windowsapps\credentials; menu F:\study; menu3 F:\study    }
+
+function cccc { mgr; siz; allstart2; upgrader; wingup; siz; qaccess; ram; ccc2; ccc3; ccc4; ccc5;; ccsizes; cleanc; rmvol; powerplans; bin; gnet; netboost; adw; dkill; refresh-disk; dddesk; dstop; fixfixFIX; update; cleanf; backcod; ;ccsizes; cleanc; dstop; ram; fixvss2; scan1; cleanc; siz }
+
+function codher {    backcod; rmbackher; listcod   }
+
+
+
+
+
+
+

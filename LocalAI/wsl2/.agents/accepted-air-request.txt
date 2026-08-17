@@ -1,0 +1,7 @@
+[2m  [WORKING] [0mLoading model: 0 MB in memory; 0.0 MiB read in the latest check.
+  [1;35mUnderstood - you want the top-level folders on drive R.[0m
+  [0;36mListing every top-level folder on the Windows drive you asked about.[0m
+  [0;33m$ win-tools dir R FOLDERS[0m
+[2m  [WORKING] [0mStarted /bin/bash "$HOME/.local/bin/win-tools" dir R: FOLDERS; the process has not written output yet.
+[2m  [WORKING] [0mNew output: 1 new line; 1 total lines and 41 characters. Latest output: ERROR|Windows drive R: is not available..
+Drive R: is not available to list.

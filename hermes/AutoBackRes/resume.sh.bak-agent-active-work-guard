@@ -1,0 +1,676 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+USER_NAME="${HERMES_WSL_USER:-ubuntu}"
+HOME_DIR="/home/${USER_NAME}"
+HERMES_BIN="${HOME_DIR}/.local/bin/hermes"
+HERMES_VENV_BIN="${HOME_DIR}/.hermes/hermes-agent/venv/bin/hermes"
+HERMES_GUARD_SOURCE="/mnt/f/study/AI_ML/AI_and_Machine_Learning/Artificial_Intelligence/hermes/AutoBackRes/hermes-command-guard.sh"
+HERMES_PATH="${HOME_DIR}/.local/bin:${HOME_DIR}/.hermes/node/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/snap/bin"
+FLEET_LOG_DIR="${HOME_DIR}/.hermes/logs"
+RESUME_LOG="${FLEET_LOG_DIR}/resume.log"
+CODEX_AUTH="${HOME_DIR}/.codex/auth.json"
+RESUME_TMP_DIR="/tmp/hermes-resume-${USER_NAME}-$$"
+RESUME_LOCK="/tmp/hermes-tray-${USER_NAME}/resume.lock"
+
+# Future-proof discovery: every Hermes home with config.yaml + .env + TELEGRAM_BOT_TOKEN
+# is supervised by the same Windows tray app. Runtime/session/log files remain per-home.
+discover_homes() {
+  local h
+  printf '%s\n' "${HOME_DIR}/.hermes"
+  for h in "${HOME_DIR}"/.hermes-*; do
+    [ -d "$h" ] || continue
+    [ -f "$h/config.yaml" ] || continue
+    [ -f "$h/.env" ] || continue
+    if grep -q '^TELEGRAM_BOT_TOKEN=' "$h/.env"; then
+      printf '%s\n' "$h"
+    fi
+  done | awk '!seen[$0]++'
+}
+
+ts() { date -Iseconds; }
+log() {
+  local line="[$(ts)] $*"
+  echo "$line"
+  mkdir -p "$FLEET_LOG_DIR"
+  printf '%s\n' "$line" >> "$RESUME_LOG"
+}
+
+as_ubuntu() {
+  if [ "$(id -un)" = "$USER_NAME" ]; then
+    env PATH="$HERMES_PATH" HOME="$HOME_DIR" "$@"
+  else
+    sudo -H -u "$USER_NAME" env PATH="$HERMES_PATH" HOME="$HOME_DIR" "$@"
+  fi
+}
+
+ensure_tmp_writable() {
+  # The Windows tray or earlier root-run probes can leave root-owned /tmp files
+  # that break later normal-user resume checks. Self-heal before any redirects.
+  mkdir -p "/tmp/hermes-tray-${USER_NAME}" 2>/dev/null || true
+  local patterns=(
+    "/tmp/hermes-resume-${USER_NAME}-"*
+    "/tmp/hermes-resume-${USER_NAME}.lock"
+    "/tmp/hermes-tray-${USER_NAME}"
+  )
+  if [ "$(id -u)" -eq 0 ]; then
+    chown -R "$USER_NAME:$USER_NAME" "${patterns[@]}" 2>/dev/null || true
+  elif command -v sudo >/dev/null 2>&1; then
+    sudo chown -R "$USER_NAME:$USER_NAME" "${patterns[@]}" 2>/dev/null || true
+  fi
+}
+
+prepare_resume_tmp() {
+  rm -rf "$RESUME_TMP_DIR" 2>/dev/null || true
+  mkdir -p "$RESUME_TMP_DIR"
+  if [ "$(id -u)" -eq 0 ]; then
+    chown "$USER_NAME:$USER_NAME" "$RESUME_TMP_DIR" 2>/dev/null || true
+  fi
+  chmod 700 "$RESUME_TMP_DIR" 2>/dev/null || true
+}
+
+install_hermes_command_guard() {
+  if [ ! -x "$HERMES_VENV_BIN" ]; then log "ERROR: real Hermes binary missing: $HERMES_VENV_BIN"; exit 16; fi
+  if [ ! -f "$HERMES_GUARD_SOURCE" ]; then log "ERROR: Hermes command guard source missing: $HERMES_GUARD_SOURCE"; exit 17; fi
+  mkdir -p "${HOME_DIR}/.local/bin"
+  rm -f "$HERMES_BIN"
+  install -o "$USER_NAME" -g "$USER_NAME" -m 0755 "$HERMES_GUARD_SOURCE" "$HERMES_BIN"
+}
+
+session_for_home() {
+  local h="$1" base
+  if [ "$h" = "${HOME_DIR}/.hermes" ]; then echo "hermes-gateway"; return; fi
+  base="$(basename "$h")"
+  echo "hermes-${base#.hermes-}"
+}
+
+home_process_pids() {
+  local h="$1" candidate cmd env_text matches_home
+  while IFS= read -r candidate; do
+    [ -n "$candidate" ] || continue
+    [ -r "/proc/$candidate/environ" ] || continue
+    env_text="$(tr '\0' '\n' < "/proc/$candidate/environ" 2>/dev/null || true)"
+    matches_home=1
+    if printf '%s\n' "$env_text" | grep -Fxq "HERMES_HOME=$h"; then
+      matches_home=0
+    elif [ "$h" = "${HOME_DIR}/.hermes" ] && ! printf '%s\n' "$env_text" | grep -q '^HERMES_HOME='; then
+      # Backward-compatible for the main gateway: older launchers omitted
+      # HERMES_HOME because /home/ubuntu/.hermes is the runtime default.
+      matches_home=0
+    fi
+    [ "$matches_home" -eq 0 ] || continue
+    cmd="$(tr '\0' ' ' < "/proc/$candidate/cmdline" 2>/dev/null || true)"
+    case "$cmd" in
+      *"hermes gateway run"*) printf '%s\n' "$candidate" ;;
+    esac
+  done < <(pgrep -u "$USER_NAME" -f '[h]ermes gateway run' 2>/dev/null || true)
+}
+
+tmux_running() {
+  local session="$1"
+  as_ubuntu tmux has-session -t "=$session" >/dev/null 2>&1
+}
+
+home_process_running() {
+  local h="$1"
+  local -a pids
+  mapfile -t pids < <(home_process_pids "$h")
+  [ "${#pids[@]}" -eq 1 ]
+}
+
+home_process_age_seconds() {
+  local h="$1" pid process_started now_epoch
+  while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    process_started="$(stat -c %Y "/proc/$pid" 2>/dev/null || echo 0)"
+    now_epoch="$(date +%s)"
+    if [ "$process_started" -gt 0 ]; then echo $((now_epoch - process_started)); return 0; fi
+  done < <(home_process_pids "$h")
+  echo 999999
+}
+
+home_process_start_epoch() {
+  local h="$1" pid process_started
+  while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    process_started="$(stat -c %Y "/proc/$pid" 2>/dev/null || echo 0)"
+    if [ "$process_started" -gt 0 ]; then echo "$process_started"; return 0; fi
+  done < <(home_process_pids "$h")
+  echo 0
+}
+
+home_config_epoch() {
+  local h="$1" cfg="$h/config.yaml"
+  if [ -e "$cfg" ]; then stat -Lc %Y "$cfg" 2>/dev/null || echo 0; else echo 0; fi
+}
+
+home_config_hash() {
+  local h="$1" cfg="$h/config.yaml"
+  if [ -e "$cfg" ]; then sha256sum "$cfg" 2>/dev/null | awk '{print $1}' || true; fi
+}
+
+home_config_loaded_ok() {
+  local h="$1" current loaded_file loaded
+  current="$(home_config_hash "$h")"
+  loaded_file="$h/.runtime/loaded-config.sha256"
+  [ -n "$current" ] || return 1
+  [ -s "$loaded_file" ] || return 1
+  loaded="$(head -n 1 "$loaded_file" 2>/dev/null | tr -d '[:space:]')"
+  [ "$current" = "$loaded" ]
+}
+
+mark_loaded_config_home() {
+  local h="$1" hash runtime_dir
+  hash="$(home_config_hash "$h")"
+  [ -n "$hash" ] || return 1
+  runtime_dir="$h/.runtime"
+  mkdir -p "$runtime_dir"
+  printf '%s\n' "$hash" >"$runtime_dir/loaded-config.sha256"
+  chown -R "$USER_NAME:$USER_NAME" "$runtime_dir" 2>/dev/null || true
+}
+
+resume_markers_present_home() {
+  local h="$1"
+  python3 - "$h/sessions/sessions.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+try:
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+except FileNotFoundError:
+    raise SystemExit(1)
+items = data.values() if isinstance(data, dict) else data
+for entry in items:
+    if isinstance(entry, dict) and entry.get("resume_pending") and entry.get("resume_reason") in {
+        "restart_timeout",
+        "shutdown_timeout",
+        "restart_interrupted",
+    }:
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
+}
+
+clear_resume_markers_home() {
+  local h="$1" reason="$2"
+  python3 - "$h/sessions/sessions.json" "$reason" <<'PY'
+import datetime as dt
+import json
+import os
+import shutil
+import sys
+
+path, reason = sys.argv[1], sys.argv[2]
+try:
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+except FileNotFoundError:
+    raise SystemExit(0)
+
+restart_reasons = {"restart_timeout", "shutdown_timeout", "restart_interrupted"}
+items = data.values() if isinstance(data, dict) else data
+changed = 0
+stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+for entry in items:
+    if not isinstance(entry, dict):
+        continue
+    if entry.get("resume_pending") and entry.get("resume_reason") in restart_reasons:
+        entry["resume_pending"] = False
+        entry["suspended"] = False
+        entry["resume_reason"] = f"cleared_by_tray_resume_{reason}_{stamp}"
+        entry["last_resume_cleared_at"] = dt.datetime.now().isoformat()
+        changed += 1
+
+if changed:
+    backup = f"{path}.bak-clear-resume-{stamp}"
+    shutil.copy2(path, backup)
+    tmp = f"{path}.tmp-clear-resume-{os.getpid()}"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    os.replace(tmp, path)
+print(f"RESUME_MARKERS_CLEARED={changed}")
+PY
+}
+
+gateway_work_ok() {
+  local h="$1" out="$2" gateway_log="$h/logs/gateway.log" run_log="$h/logs/gateway-run.log"
+  HERMES_PROCESS_AGE_SECONDS="$(home_process_age_seconds "$h")" python3 - "$gateway_log" "$run_log" >>"$out" <<'PY'
+import datetime as dt, os, re, sys, time
+paths=sys.argv[1:]
+stamp=re.compile(r"^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})")
+inbound=re.compile(r"inbound message: platform=telegram .* chat=(\S+)")
+ready=re.compile(r"response ready: platform=telegram chat=(\S+)")
+start=re.compile(r"Starting Hermes Gateway")
+latest_in=latest_ready=latest_start=None
+now=time.time()
+stale_after=int(os.environ.get('HERMES_TRAY_STALE_UNANSWERED_SECONDS','300'))
+startup_grace=int(os.environ.get('HERMES_TRAY_STARTUP_GRACE_SECONDS','120'))
+process_age=int(os.environ.get('HERMES_PROCESS_AGE_SECONDS','999999'))
+def ts(line):
+    m=stamp.match(line)
+    return dt.datetime.fromisoformat(m.group(1)+'T'+m.group(2)).timestamp() if m else None
+for path in paths:
+    try:
+        for line in open(path, encoding='utf-8', errors='replace'):
+            t=ts(line)
+            if t is None: continue
+            if start.search(line): latest_start=t
+            if inbound.search(line): latest_in=t
+            if ready.search(line): latest_ready=t
+    except FileNotFoundError:
+        pass
+if latest_in and (latest_ready is None or latest_ready < latest_in):
+    age=int(now-latest_in)
+    if process_age < startup_grace:
+        print('WORK_ACTIVE=startup_grace_after_reconnect process_age_seconds=%s startup_grace_seconds=%s' % (process_age, startup_grace))
+        raise SystemExit(0)
+    if latest_start and latest_start > latest_in:
+        print('WORK_INTERRUPTED_BY_PRIOR_RESTART=1 age_seconds=%s' % age)
+        raise SystemExit(0)
+    if age > stale_after:
+        print('WORK_STALE=long_running_unanswered_work_reconnect_required age_seconds=%s threshold_seconds=%s' % (age, stale_after))
+        raise SystemExit(63)
+    print('WORK_ACTIVE=active_unanswered_work age_seconds=%s threshold_seconds=%s' % (age, stale_after))
+else:
+    print('WORK_OK=1')
+PY
+  local rc=$?
+  echo "WORK_CHECK_RC=$rc" >>"$out"
+  return "$rc"
+}
+
+repair_duplicate_processes_home() {
+  local h="$1" pid keep state_pid session tmux_pid
+  local -a pids
+  mapfile -t pids < <(home_process_pids "$h")
+  [ "${#pids[@]}" -gt 1 ] || return 1
+  session="$(session_for_home "$h")"
+  state_pid="$(python3 - "$h/gateway_state.json" <<'PY'
+import json, sys
+try:
+    print(json.load(open(sys.argv[1], encoding="utf-8")).get("pid") or "")
+except Exception:
+    print("")
+PY
+)"
+  tmux_pid="$(as_ubuntu tmux list-panes -t "=$session" -F '#{pane_pid}' 2>/dev/null | head -1 || true)"
+  keep=""
+  if [ -n "$state_pid" ] && printf '%s\n' "${pids[@]}" | grep -Fxq "$state_pid"; then
+    keep="$state_pid"
+  elif [ -n "$tmux_pid" ] && printf '%s\n' "${pids[@]}" | grep -Fxq "$tmux_pid"; then
+    keep="$tmux_pid"
+  else
+    log "[$h] Duplicate exact-home gateways found (${pids[*]}), but no state/tmux-supervised healthy gateway could be identified; refusing automatic duplicate termination"
+    return 1
+  fi
+  log "[$h] Duplicate exact-home gateways found (${pids[*]}); keeping pid=$keep and terminating only extras"
+  for pid in "${pids[@]}"; do
+    [ "$pid" != "$keep" ] || continue
+    kill "$pid" 2>/dev/null || true
+    log "[$h] Terminated duplicate gateway pid=$pid; kept live pid=$keep"
+  done
+  sleep 2
+  mapfile -t pids < <(home_process_pids "$h")
+  for pid in "${pids[@]}"; do
+    [ "$pid" != "$keep" ] || continue
+    kill -9 "$pid" 2>/dev/null || true
+    log "[$h] Killed stubborn duplicate gateway pid=$pid; kept live pid=$keep"
+  done
+  return 0
+}
+
+manual_gateway_stop_requested() {
+  [ "${HERMES_ALLOW_GATEWAY_STOP:-}" = "manual-intent" ] && /usr/local/sbin/hermes-check-manual-gateway-intent >/dev/null 2>&1
+}
+
+status_ok() {
+  local h="$1" session out tmux_ok=1 process_ok=1 work_ok=0 config_ok=1 runtime_ok=1 process_epoch config_epoch
+  local -a pids
+  session="$(session_for_home "$h")"
+  out="$RESUME_TMP_DIR/status-$(basename "$h").txt"
+  {
+    echo "HERMES_HOME=$h"
+    if tmux_running "$session"; then echo "TMUX_OK=$session"; tmux_ok=0; else echo "TMUX_BAD=$session"; fi
+    mapfile -t pids < <(home_process_pids "$h")
+    echo "PROCESS_COUNT=${#pids[@]} pids=${pids[*]:-none}"
+    if [ "${#pids[@]}" -eq 1 ]; then echo "PROCESS_OK=exact_home"; process_ok=0; else echo "PROCESS_BAD=duplicate_or_missing_exact_home"; fi
+    process_epoch="$(home_process_start_epoch "$h")"
+    config_epoch="$(home_config_epoch "$h")"
+    echo "PROCESS_START_EPOCH=$process_epoch"
+    echo "CONFIG_EPOCH=$config_epoch"
+    if home_config_loaded_ok "$h" || { [ "$process_epoch" -gt 0 ] && [ "$config_epoch" -le "$process_epoch" ]; }; then
+      echo "CONFIG_FRESH_OK=1"
+      config_ok=0
+    else
+      echo "CONFIG_PENDING_RELOAD=1"
+      echo "CONFIG_RELOAD_REQUIRED=1"
+    fi
+  } >"$out"
+  if [ "${#pids[@]}" -eq 1 ]; then
+    if python3 - "$h/gateway_state.json" "${pids[0]}" >>"$out" <<'PY'
+import datetime as dt
+import json
+import os
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+pid = int(sys.argv[2])
+try:
+    data = json.loads(path.read_text(encoding="utf-8"))
+except Exception as exc:
+    print(f"RUNTIME_BAD=state_unreadable:{exc}")
+    raise SystemExit(1)
+
+state_pid = data.get("pid")
+gateway_state = data.get("gateway_state")
+telegram = (data.get("platforms") or {}).get("telegram", {})
+telegram_state = telegram.get("state")
+heartbeat_at = telegram.get("polling_heartbeat_at")
+print(f"RUNTIME_STATE=pid:{pid} state_pid:{state_pid} gateway:{gateway_state} telegram:{telegram_state}")
+if state_pid != pid or gateway_state != "running" or telegram_state != "connected":
+    print("RUNTIME_BAD=metadata_mismatch")
+    raise SystemExit(1)
+if heartbeat_at:
+    try:
+        heartbeat = dt.datetime.fromisoformat(str(heartbeat_at).replace("Z", "+00:00"))
+        if heartbeat.tzinfo is None:
+            heartbeat = heartbeat.replace(tzinfo=dt.timezone.utc)
+        age = (dt.datetime.now(dt.timezone.utc) - heartbeat).total_seconds()
+        max_age = int(os.environ.get("HERMES_TRAY_POLLING_HEARTBEAT_MAX_AGE_SECONDS", "90"))
+        print(f"RUNTIME_HEARTBEAT_OK=age_seconds:{int(age)} max_seconds:{max_age}")
+        if age > max_age:
+            print("RUNTIME_BAD=heartbeat_stale")
+            raise SystemExit(1)
+    except Exception as exc:
+        print(f"RUNTIME_BAD=heartbeat_invalid:{exc}")
+        raise SystemExit(1)
+print("RUNTIME_OK=1")
+PY
+    then
+      runtime_ok=0
+    fi
+  else
+    echo "RUNTIME_BAD=no_exact_process" >>"$out"
+  fi
+  gateway_work_ok "$h" "$out" || work_ok=$?
+  echo "STATUS_CODES tmux=$tmux_ok process=$process_ok runtime=$runtime_ok work=$work_ok config=$config_ok" >>"$out"
+  [ "$tmux_ok" -eq 0 ] && [ "$process_ok" -eq 0 ] && [ "$runtime_ok" -eq 0 ] && [ "$work_ok" -eq 0 ] && [ "$config_ok" -eq 0 ]
+}
+
+log_status_failure_home() {
+  local h="$1" out="$RESUME_TMP_DIR/status-$(basename "$h").txt"
+  if [ -s "$out" ]; then
+    while IFS= read -r line; do log "[$h] HEALTH_MISMATCH=$line"; done <"$out"
+  else
+    log "[$h] HEALTH_MISMATCH=no_status_output"
+  fi
+}
+
+print_home_status() {
+  local h="$1" session out process_epoch config_epoch
+  local -a pids
+  session="$(session_for_home "$h")"
+  out="$RESUME_TMP_DIR/print-status-$(basename "$h").txt"
+  echo "HERMES_HOME=$h"
+  if tmux_running "$session"; then echo "TMUX_OK=$session"; else echo "TMUX_BAD=$session"; fi
+  mapfile -t pids < <(home_process_pids "$h")
+  echo "PROCESS_COUNT=${#pids[@]} pids=${pids[*]:-none}"
+  if [ "${#pids[@]}" -eq 1 ]; then echo "PROCESS_OK=exact_home"; else echo "PROCESS_BAD=duplicate_or_missing_exact_home"; fi
+  process_epoch="$(home_process_start_epoch "$h")"
+  config_epoch="$(home_config_epoch "$h")"
+  echo "PROCESS_START_EPOCH=$process_epoch"
+  echo "CONFIG_EPOCH=$config_epoch"
+  if home_config_loaded_ok "$h" || { [ "$process_epoch" -gt 0 ] && [ "$config_epoch" -le "$process_epoch" ]; }; then
+    echo "CONFIG_FRESH_OK=1"
+  else
+    echo "CONFIG_PENDING_RELOAD=1"
+    echo "CONFIG_RELOAD_DEFERRED=active_gateway_not_restarted"
+  fi
+  : >"$out"
+  gateway_work_ok "$h" "$out" || true
+  cat "$out"
+}
+
+telegram_api_probe_home() {
+  local h="$1" token
+  set -a; . "$h/.env"; set +a
+  token="${TELEGRAM_BOT_TOKEN:-}"
+  if [ -z "$token" ]; then log "ERROR: $h has no TELEGRAM_BOT_TOKEN"; return 13; fi
+  timeout 12s curl --max-time 8 -fsS "https://api.telegram.org/bot${token}/getMe" >"$RESUME_TMP_DIR/getme-$(basename "$h").json"
+  python3 - "$h" "$RESUME_TMP_DIR/getme-$(basename "$h").json" <<'PY'
+import json, sys
+data=json.load(open(sys.argv[2]))
+if not data.get('ok'):
+    raise SystemExit('Telegram getMe returned not ok for '+sys.argv[1])
+user=data.get('result', {})
+print('Telegram bot OK for %s: id=%s username=@%s' % (sys.argv[1], user.get('id'), user.get('username')))
+PY
+}
+
+telegram_send_probe_home() {
+  local h="$1" action="$2" chat_id token
+  set -a; . "$h/.env"; set +a
+  token="${TELEGRAM_BOT_TOKEN:-}"
+  chat_id="${TELEGRAM_TEST_CHAT_ID:-}"
+  if [ -z "$chat_id" ] && [ -n "${TELEGRAM_ALLOWED_USERS:-}" ]; then chat_id="${TELEGRAM_ALLOWED_USERS%%,*}"; fi
+  if [ -z "$chat_id" ] || [ -z "$token" ]; then return 0; fi
+  # Avoid noisy watchdog pings when nothing changed; only prove actual reconnects/startups.
+  if [ "$action" != "reconnected" ]; then return 0; fi
+  timeout 12s curl --max-time 8 -fsS -X POST "https://api.telegram.org/bot${token}/sendMessage" \
+    -d chat_id="$chat_id" \
+    --data-urlencode text="Hermes tray verified ${h} is reconnected and ready: $(ts)" >"$RESUME_TMP_DIR/send-$(basename "$h").json" || true
+}
+
+repair_shared_config_if_truncated() {
+  python3 <<'PY'
+import datetime as dt
+import shutil
+from pathlib import Path
+
+import yaml
+
+home = Path("/home/ubuntu/.hermes")
+config = home / "config.yaml"
+required_quick = {"nnew", "sstop", "all", "todoist", "image", "ps5", "ahk", "clean", "ccc"}
+
+def load(path: Path) -> dict:
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8", errors="replace"))
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+current = load(config)
+quick = current.get("quick_commands") if isinstance(current.get("quick_commands"), dict) else {}
+broken = (
+    len(current) < 20
+    or len(quick) < 40
+    or any(name not in quick for name in required_quick)
+)
+
+if not broken:
+    print(f"CONFIG_GUARD_OK=quick:{len(quick)} keys:{len(current)}")
+    raise SystemExit(0)
+
+candidates = []
+for path in home.glob("config.yaml*"):
+    if path.name == "config.yaml":
+        continue
+    data = load(path)
+    q = data.get("quick_commands") if isinstance(data.get("quick_commands"), dict) else {}
+    if len(data) >= 20 and len(q) >= 40 and all(name in q for name in required_quick):
+        candidates.append((path.stat().st_mtime, path, len(q), len(data)))
+
+if not candidates:
+    print("CONFIG_GUARD_FAIL=no_complete_config_backup")
+    raise SystemExit(23)
+
+_mtime, source, qcount, key_count = sorted(candidates, reverse=True)[0]
+stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+backup = home / f"config.yaml.bak-truncated-autoguard-{stamp}"
+if config.exists():
+    shutil.copy2(config, backup)
+shutil.copy2(source, config)
+print(f"CONFIG_GUARD_RESTORED={source} quick:{qcount} keys:{key_count} backup:{backup}")
+PY
+}
+
+sync_telegram_menus() {
+  local sync_script="${HOME_DIR}/.hermes/scripts/sync_telegram_clone_menus.py"
+  if [ ! -f "$sync_script" ]; then
+    log "ERROR: Telegram menu sync script missing: $sync_script"
+    return 22
+  fi
+  log "Synchronizing Telegram BotCommand menus for the full Hermes fleet"
+  if as_ubuntu env HERMES_HOME="${HOME_DIR}/.hermes" TELEGRAM_MENU_API_TIMEOUT=8 \
+      "${HOME_DIR}/.hermes/hermes-agent/venv/bin/python" "$sync_script" --verbose \
+      >"$RESUME_TMP_DIR/telegram-menu-sync.out" 2>"$RESUME_TMP_DIR/telegram-menu-sync.err"; then
+    while IFS= read -r line; do log "[telegram-menu] $line"; done <"$RESUME_TMP_DIR/telegram-menu-sync.out"
+    log "Telegram BotCommand menus synchronized and verified"
+    return 0
+  fi
+  local rc=$?
+  log "ERROR: Telegram menu sync failed with exit $rc"
+  while IFS= read -r line; do log "[telegram-menu] $line"; done <"$RESUME_TMP_DIR/telegram-menu-sync.out" 2>/dev/null || true
+  while IFS= read -r line; do log "[telegram-menu-err] $line"; done <"$RESUME_TMP_DIR/telegram-menu-sync.err" 2>/dev/null || true
+  return "$rc"
+}
+
+start_gateway_home() {
+  local h="$1" session log_dir run_log deadline pid
+  session="$(session_for_home "$h")"
+  log_dir="$h/logs"
+  run_log="$log_dir/gateway-run.log"
+  mkdir -p "$log_dir"
+  if ! manual_gateway_stop_requested; then
+    log "[$h] gateway is not healthy, but automatic reconnect is deferred because a fresh tray/root manual gateway intent marker was not provided"
+    return 21
+  fi
+  log "[$h] manual-intent confirmed; reconnecting only this Hermes home via tmux session $session."
+  set -a; . "$h/.env"; set +a
+  if [ -n "${TELEGRAM_BOT_TOKEN:-}" ]; then
+    timeout 12s curl --max-time 8 -fsS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteWebhook" >"$RESUME_TMP_DIR/deletewebhook-$(basename "$h").json" || true
+  fi
+  as_ubuntu tmux kill-session -t "$session" 2>/dev/null || true
+  while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    kill "$pid" 2>/dev/null || true
+    log "[$h] Terminated old/duplicate gateway pid=$pid before reconnect"
+  done < <(home_process_pids "$h")
+  sleep 2
+  while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    kill -9 "$pid" 2>/dev/null || true
+    log "[$h] Killed stubborn duplicate gateway pid=$pid before reconnect"
+  done < <(home_process_pids "$h")
+  rm -f "$h/gateway.lock" "$h/gateway.pid" 2>/dev/null || true
+  chown "$USER_NAME:$USER_NAME" "$h" "$h/gateway_state.json" "$h/processes.json" 2>/dev/null || true
+  clear_resume_markers_home "$h" "reconnect" | while IFS= read -r line; do log "[$h] $line"; done
+  mark_loaded_config_home "$h" || true
+  as_ubuntu tmux new-session -d -s "$session" \
+    "cd '$HOME_DIR' && export HERMES_HOME='$h' PYTHONUNBUFFERED=1 PATH='$HERMES_PATH' && exec '$HERMES_BIN' gateway run >>'$run_log' 2>&1"
+  deadline=$((SECONDS + 120))
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    if tmux_running "$session" && home_process_running "$h" && status_ok "$h"; then
+      log "[$h] Hermes gateway process is supervised and runtime-ready after reconnect"
+      clear_resume_markers_home "$h" "post_reconnect_ready" | while IFS= read -r line; do log "[$h] $line"; done
+      return 0
+    fi
+    sleep 2
+  done
+  log "ERROR: [$h] Hermes gateway process did not become runtime-ready in time"
+  cat "$RESUME_TMP_DIR/status-$(basename "$h").txt" 2>/dev/null || true
+  tail -120 "$run_log" 2>/dev/null || true
+  return 20
+}
+
+mkdir -p "$FLEET_LOG_DIR"
+touch "$RESUME_LOG"
+ensure_tmp_writable
+exec 9>"$RESUME_LOCK"
+if ! flock -n 9; then
+  log "Another Hermes WSL2 fleet resume is already running; refusing overlap."
+  exit 75
+fi
+prepare_resume_tmp
+trap 'rm -rf "$RESUME_TMP_DIR" 2>/dev/null || true' EXIT
+log "Starting Hermes WSL2 fleet resume check"
+command -v curl >/dev/null || { log "ERROR: missing curl"; exit 11; }
+command -v python3 >/dev/null || { log "ERROR: missing python3"; exit 11; }
+command -v tmux >/dev/null || { log "ERROR: missing tmux"; exit 11; }
+[ -e "$CODEX_AUTH" ] || { log "ERROR: missing Codex auth: $CODEX_AUTH"; exit 10; }
+install_hermes_command_guard
+
+if repair_shared_config_if_truncated >"$RESUME_TMP_DIR/config-guard.out" 2>&1; then
+  guard_rc=0
+else
+  guard_rc=$?
+fi
+while IFS= read -r line; do log "$line"; done <"$RESUME_TMP_DIR/config-guard.out"
+if [ "$guard_rc" -ne 0 ]; then
+  log "ERROR: shared config guard failed with exit $guard_rc"
+  exit "$guard_rc"
+fi
+
+homes=()
+while IFS= read -r h; do homes+=("$h"); done < <(discover_homes)
+if [ "${#homes[@]}" -eq 0 ]; then log "ERROR: no Telegram Hermes homes discovered"; exit 14; fi
+log "Discovered ${#homes[@]} Telegram Hermes home(s): ${homes[*]}"
+
+overall=0
+for h in "${homes[@]}"; do
+  action="kept-existing"
+  chown -R "$USER_NAME:$USER_NAME" "$h/logs" 2>/dev/null || true
+  chmod 600 "$h/.env" 2>/dev/null || true
+  if ! telegram_api_probe_home "$h"; then overall=1; continue; fi
+  session="$(session_for_home "$h")"
+  if resume_markers_present_home "$h"; then
+    log "[$h] Restart-recovery marker found"
+    if status_ok "$h"; then
+      clear_resume_markers_home "$h" "healthy_keep" | while IFS= read -r line; do log "[$h] $line"; done
+      log "[$h] Existing Hermes gateway is healthy; cleared restart marker without reconnect"
+    else
+      log_status_failure_home "$h"
+      if repair_duplicate_processes_home "$h" && status_ok "$h"; then
+        clear_resume_markers_home "$h" "dedupe_keep" | while IFS= read -r line; do log "[$h] $line"; done
+        log "[$h] Restart marker plus duplicate poller repaired without restarting the kept gateway"
+      else
+        log "[$h] Restart marker plus unhealthy runtime; reconnecting this Hermes home"
+        action="reconnected"
+        if ! start_gateway_home "$h"; then overall=1; continue; fi
+      fi
+    fi
+	  elif status_ok "$h"; then
+		    clear_resume_markers_home "$h" "healthy_keep" | while IFS= read -r line; do log "[$h] $line"; done
+		    log "[$h] Existing Hermes gateway is healthy; keeping it running without restart"
+  else
+    log_status_failure_home "$h"
+    if repair_duplicate_processes_home "$h" && status_ok "$h"; then
+      log "[$h] Duplicate poller repaired without restarting the kept gateway"
+      action="kept-existing"
+    else
+      action="reconnected"
+      if ! start_gateway_home "$h"; then overall=1; continue; fi
+    fi
+	  fi
+	  clear_resume_markers_home "$h" "post_ready" | while IFS= read -r line; do log "[$h] $line"; done
+	  telegram_send_probe_home "$h" "$action"
+  log "[$h] Final Hermes gateway status:"
+  print_home_status "$h" || true
+  grep -E "Connected to Telegram|Gateway running with 1 platform" "$h/logs/gateway.log" 2>/dev/null | tail -5 || true
+done
+
+if ! sync_telegram_menus; then
+  overall=1
+fi
+
+if [ "$overall" -ne 0 ]; then
+  log "Hermes WSL2 fleet resume completed with failures"
+  exit "$overall"
+fi
+
+echo "RESUME_ACTION=fleet-ok"
+echo "RESUME_LOG=$RESUME_LOG"
+log "Hermes WSL2 fleet resume complete"

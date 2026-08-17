@@ -1,0 +1,771 @@
+#!/usr/bin/env bash
+set +e
+
+export PATH="/home/ubuntu/.local/bin:/home/ubuntu/.hermes/node/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/snap/bin"
+USER_NAME="${HERMES_WSL_USER:-ubuntu}"
+HOME_DIR="/home/${USER_NAME}"
+HERMES_BIN="${HOME_DIR}/.local/bin/hermes"
+
+session_for_home() {
+  local h="$1" base
+  if [ "$h" = "${HOME_DIR}/.hermes" ]; then echo "hermes-gateway"; return; fi
+  base="$(basename "$h")"
+  echo "hermes-${base#.hermes-}"
+}
+
+discover_homes() {
+  local h
+  printf '%s\n' "${HOME_DIR}/.hermes"
+  for h in "${HOME_DIR}"/.hermes-*; do
+    [ -d "$h" ] || continue
+    [ -f "$h/config.yaml" ] || continue
+    [ -f "$h/.env" ] || continue
+    if grep -q '^TELEGRAM_BOT_TOKEN=' "$h/.env"; then printf '%s\n' "$h"; fi
+  done | awk '!seen[$0]++'
+}
+
+home_process_pids() {
+  local h="$1"
+  python3 - "$USER_NAME" "$HOME_DIR" "$h" <<'PY'
+import os, pwd, sys
+user, home_dir, target_home = sys.argv[1:4]
+try:
+    target_uid = pwd.getpwnam(user).pw_uid
+except KeyError:
+    raise SystemExit(0)
+
+def is_gateway_argv(argv):
+    # Match the actual gateway process argv only, not shell/tool commands that merely contain the text.
+    for i in range(len(argv) - 2):
+        exe = argv[i]
+        if exe.endswith('/hermes') and argv[i + 1:i + 3] == ['gateway', 'run']:
+            return True
+    return False
+
+for name in os.listdir('/proc'):
+    if not name.isdigit():
+        continue
+    pid = int(name)
+    proc = f'/proc/{name}'
+    try:
+        st = os.stat(proc)
+        if st.st_uid != target_uid:
+            continue
+        raw_cmd = open(f'{proc}/cmdline','rb').read().split(b'\0')
+        argv = [x.decode('utf-8','ignore') for x in raw_cmd if x]
+        if not is_gateway_argv(argv):
+            continue
+        env_items = open(f'{proc}/environ','rb').read().split(b'\0')
+        env = {}
+        for item in env_items:
+            if b'=' in item:
+                k, v = item.split(b'=', 1)
+                env[k.decode('utf-8','ignore')] = v.decode('utf-8','ignore')
+    except Exception:
+        continue
+    env_home = env.get('HERMES_HOME')
+    if env_home == target_home or (target_home == f'{home_dir}/.hermes' and not env_home):
+        print(pid)
+PY
+}
+
+check_home() {
+  local h="$1" label session telegram_json telegram_txt webhook_json webhook_txt gateway_log run_log pid token curl_code telegram_code webhook_curl_code webhook_code config_state process_started config_epoch runtime_state
+  local -a pids
+  label="$(basename "$h")"
+  session="$(session_for_home "$h")"
+  tmp_dir="/tmp/hermes-tray-${USER_NAME}"
+  mkdir -p "$tmp_dir"
+  if [ "$(id -u)" -eq 0 ]; then
+    chown -R "$USER_NAME:$USER_NAME" "$tmp_dir" 2>/dev/null || true
+  elif [ ! -w "$tmp_dir" ] && command -v sudo >/dev/null 2>&1; then
+    sudo chown -R "$USER_NAME:$USER_NAME" "$tmp_dir" 2>/dev/null || true
+  fi
+  telegram_json="$tmp_dir/telegram-${label}.json"
+  telegram_txt="$tmp_dir/telegram-${label}.txt"
+  webhook_json="$tmp_dir/telegram-webhook-${label}.json"
+  webhook_txt="$tmp_dir/telegram-webhook-${label}.txt"
+  gateway_log="$h/logs/gateway.log"
+  run_log="$h/logs/gateway-run.log"
+
+  echo "READY_HOME=$h"
+
+  sudo -H -u "$USER_NAME" tmux has-session -t "=$session" >/dev/null 2>&1
+  tmux_state=$?
+  echo "READY_TMUX_${label}=$([ "$tmux_state" -eq 0 ] && echo 1 || echo 0) session=$session"
+
+  mapfile -t pids < <(home_process_pids "$h")
+  pid="${pids[0]:-}"
+  echo "READY_PID_COUNT_${label}=${#pids[@]} pids=${pids[*]:-none}"
+  echo "READY_PID_HINT_${label}=${pid:-none}"
+  if [ "${#pids[@]}" -eq 1 ] && [ -n "$pid" ]; then
+    process_state=0
+  elif [ "${#pids[@]}" -gt 1 ] && [ -n "$pid" ]; then
+    # Duplicate live gateways are not a tray permission to kill a working chat.
+    # Report working/degraded; only explicit manual Restart Gateway may replace them.
+    process_state=0
+    echo "READY_WORKING=duplicate_gateway_processes_no_auto_kill:${pids[*]}"
+  else
+    process_state=1
+    echo "READY_FAIL=missing_gateway_process:none"
+  fi
+  process_age=999999
+  if [ -n "$pid" ] && [ -e "/proc/$pid" ]; then
+    process_started="$(stat -c %Y "/proc/$pid" 2>/dev/null || echo 0)"
+    now_epoch="$(date +%s)"
+    if [ "$process_started" -gt 0 ]; then process_age=$((now_epoch - process_started)); fi
+  fi
+  echo "READY_PROCESS_AGE_${label}=${process_age}s"
+  config_state=0
+  config_epoch="$(stat -Lc %Y "$h/config.yaml" 2>/dev/null || echo 0)"
+  config_hash="$(sha256sum "$h/config.yaml" 2>/dev/null | awk '{print $1}' || true)"
+  loaded_config_hash="$(head -n 1 "$h/.runtime/loaded-config.sha256" 2>/dev/null | tr -d '[:space:]' || true)"
+  echo "READY_CONFIG_EPOCH_${label}=${config_epoch}"
+  if [ -n "$config_hash" ] && [ "$config_hash" = "$loaded_config_hash" ]; then
+    echo "READY_CONFIG_FRESH_${label}=hash"
+  elif [ -n "$pid" ] && [ -e "/proc/$pid" ] && [ "$process_started" -gt 0 ] && [ "$config_epoch" -le "$process_started" ]; then
+    echo "READY_CONFIG_FRESH_${label}=1"
+  else
+    echo "READY_CONFIG_PENDING_RELOAD_${label}=1"
+    # A shared config write does not mean the live Telegram poller is broken. Older health
+    # logic made otherwise connected bots look "not ready" until they were restarted,
+    # which caused unnecessary watchdog churn and false red tray status during active work.
+    # Keep the warning visible, but only make it fatal when strict config reload checking is
+    # explicitly requested.
+    echo "READY_WORKING=config_changed_reload_deferred:$h"
+    if [ "${HERMES_TRAY_STRICT_CONFIG_RELOAD:-0}" = "1" ]; then
+      echo "READY_FAIL=config_changed_requires_gateway_reload:$h"
+      config_state=1
+    fi
+  fi
+
+  runtime_state=1
+  if [ -n "$pid" ]; then
+    HERMES_PROCESS_AGE_SECONDS="$process_age" python3 - "$h" "$pid" <<'PY'
+import datetime as dt
+import json
+import sys
+from pathlib import Path
+
+home = Path(sys.argv[1])
+pid = int(sys.argv[2])
+state_path = home / "gateway_state.json"
+try:
+    data = json.loads(state_path.read_text(encoding="utf-8"))
+except Exception as exc:
+    print(f"READY_FAIL=runtime_state_unreadable:{exc}")
+    raise SystemExit(1)
+
+state_pid = data.get("pid")
+gateway_state = data.get("gateway_state")
+telegram = (data.get("platforms") or {}).get("telegram", {})
+telegram_state = telegram.get("state")
+print(f"READY_RUNTIME_STATE=pid:{pid} state_pid:{state_pid} gateway:{gateway_state} telegram:{telegram_state}")
+if state_pid != pid or gateway_state != "running" or telegram_state != "connected":
+    import os
+    process_age = int(os.environ.get("HERMES_PROCESS_AGE_SECONDS", "999999") or "999999")
+    startup_grace = int(os.environ.get("HERMES_TRAY_STARTUP_GRACE_SECONDS", "120") or "120")
+    print("READY_RUNTIME_METADATA_LAG=1")
+    # A freshly restarted gateway can spend tens of seconds initializing MCP/tooling before
+    # gateway_state.json is rewritten with the new PID/connected state. Treat that window as
+    # "working" instead of "failed" so the tray watchdog does not repeatedly kill the same
+    # clone before it has a chance to finish startup.
+    if process_age < startup_grace:
+        print(f"READY_WORKING=startup_runtime_metadata_pending process_age_seconds:{process_age} startup_grace_seconds:{startup_grace}")
+        raise SystemExit(0)
+    # Safety-first tray policy: a live exact-home gateway process must not be
+    # treated as a restart trigger merely because gateway_state.json is stale
+    # or lagging. Mark it as working/degraded so the watchdog does not kill an
+    # in-flight Telegram task; resume.sh can still start homes with no process.
+    print(f"READY_WORKING=runtime_state_metadata_lag_no_reconnect:expected_pid:{pid}:state_pid:{state_pid}:gateway:{gateway_state}:telegram:{telegram_state}")
+    raise SystemExit(0)
+
+mode = telegram.get("mode") or "unknown"
+polling_running = telegram.get("polling_running")
+heartbeat_at = telegram.get("polling_heartbeat_at")
+heartbeat_error = telegram.get("polling_heartbeat_error")
+if mode == "polling":
+    if polling_running is not True:
+        print(f"READY_FAIL=telegram_polling_not_running:{heartbeat_error or 'unknown'}")
+        raise SystemExit(2)
+    if not heartbeat_at:
+        print("READY_FAIL=telegram_polling_heartbeat_missing")
+        raise SystemExit(2)
+    try:
+        heartbeat_dt = dt.datetime.fromisoformat(str(heartbeat_at).replace("Z", "+00:00"))
+        if heartbeat_dt.tzinfo is None:
+            heartbeat_dt = heartbeat_dt.replace(tzinfo=dt.timezone.utc)
+        age = (dt.datetime.now(dt.timezone.utc) - heartbeat_dt).total_seconds()
+    except Exception as exc:
+        print(f"READY_FAIL=telegram_polling_heartbeat_bad_timestamp:{exc}")
+        raise SystemExit(2)
+    max_age = int(__import__("os").environ.get("HERMES_TRAY_POLLING_HEARTBEAT_MAX_AGE_SECONDS", "90"))
+    print(f"READY_POLLING_HEARTBEAT_OK=age_seconds:{int(age)} max_seconds:{max_age}")
+    if age > max_age:
+        print(f"READY_FAIL=telegram_polling_heartbeat_stale:{int(age)}")
+        raise SystemExit(2)
+elif mode == "unknown":
+    print("READY_WORKING=polling_heartbeat_pending_after_upgrade")
+PY
+    runtime_state=$?
+  else
+    echo "READY_FAIL=runtime_state_no_pid"
+  fi
+
+  HERMES_PROCESS_AGE_SECONDS="$process_age" HERMES_PROCESS_START_EPOCH="${process_started:-0}" python3 - "$gateway_log" "$run_log" <<'PY'
+import datetime as dt, os, re, sys, time
+paths=sys.argv[1:]
+stamp=re.compile(r"^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})")
+inbound=re.compile(r"inbound message: platform=telegram .* chat=(\S+)")
+ready=re.compile(r"response ready: platform=telegram chat=(\S+)")
+start=re.compile(r"Starting Hermes Gateway")
+bad=re.compile(r"(Traceback|telegram\.error\.BadRequest|Permission denied|cannot execute|Gateway already running|Unhandled|CRITICAL|ERROR)")
+ignore=re.compile(r"(READY_FAIL=|Unrecognized slash command)")
+latest_in=latest_ready=latest_start=latest_bad=latest_success=None
+pending_active=False
+now=time.time()
+# If a Telegram chat has been unanswered this long, report it as active work by default.
+# Do not turn long-running work into a tray health failure unless strict reconnect mode is explicitly enabled;
+# otherwise the watchdog can SIGTERM a healthy gateway in the middle of an agent turn.
+stale_after=int(os.environ.get('HERMES_TRAY_STALE_UNANSWERED_SECONDS','300'))
+strict_stale_reconnect=os.environ.get('HERMES_TRAY_RECONNECT_STALE_UNANSWERED','0').lower() in ('1','true','yes','on')
+startup_grace=int(os.environ.get('HERMES_TRAY_STARTUP_GRACE_SECONDS','120'))
+process_age=int(os.environ.get('HERMES_PROCESS_AGE_SECONDS','999999'))
+process_start_epoch=int(os.environ.get('HERMES_PROCESS_START_EPOCH','0') or '0')
+def ts(line):
+    m=stamp.match(line)
+    return dt.datetime.fromisoformat(m.group(1)+'T'+m.group(2)).timestamp() if m else None
+for path in paths:
+    try:
+        for line in open(path,encoding='utf-8',errors='replace'):
+            t=ts(line)
+            if t is None: continue
+            if process_start_epoch and t < process_start_epoch:
+                continue
+            if start.search(line): latest_start=t
+            if inbound.search(line): latest_in=t
+            if ready.search(line): latest_ready=t; latest_success=t
+            if 'Sending response' in line or 'Connected to Telegram' in line: latest_success=t
+            if now-t <= 900 and bad.search(line) and not ignore.search(line): latest_bad=t
+    except FileNotFoundError: pass
+if latest_in and (latest_ready is None or latest_ready < latest_in):
+    pending_active=True
+    age=int(now-latest_in)
+    if process_age < startup_grace:
+        print('READY_WORKING=startup_grace_after_reconnect process_age_seconds=%s startup_grace_seconds=%s' % (process_age, startup_grace))
+    elif latest_start and latest_start > latest_in:
+        print('READY_WORKING=prior_unanswered_work_was_interrupted_by_gateway_restart age_seconds=%s' % age)
+    elif age > stale_after:
+        if strict_stale_reconnect:
+            print('READY_FAIL=telegram_unanswered_work_stale age_seconds=%s threshold_seconds=%s strict_reconnect=1' % (age, stale_after))
+            raise SystemExit(63)
+        print('READY_WORKING=active_unanswered_work_stale_no_reconnect age_seconds=%s threshold_seconds=%s' % (age, stale_after))
+    else:
+        print('READY_WORKING=active_unanswered_work age_seconds=%s threshold_seconds=%s' % (age, stale_after))
+else:
+    print('READY_WORK_OK=1')
+if latest_bad and not pending_active and (latest_success is None or latest_success < latest_bad):
+    # Recent gateway/agent errors in a live exact process are a diagnostic
+    # signal, not permission for the tray watchdog to restart a Telegram chat.
+    # Keep the icon green/working and let the user/session continue or issue a
+    # manual Restart Gateway if they explicitly want replacement.
+    print('READY_WORKING=recent_gateway_error_no_reconnect')
+print('READY_ERRORS_OK=1')
+PY
+  work_errors=$?
+
+  python3 - "$h/sessions/sessions.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+try:
+    data = json.loads(path.read_text(encoding="utf-8"))
+except FileNotFoundError:
+    print("READY_SESSIONS_OK=missing_sessions_file_treated_empty")
+    raise SystemExit(0)
+except Exception as exc:
+    print(f"READY_FAIL=sessions_unreadable:{exc}")
+    raise SystemExit(64)
+
+items = data.items() if isinstance(data, dict) else enumerate(data if isinstance(data, list) else [])
+blocked = []
+active = []
+for key, entry in items:
+    if not isinstance(entry, dict):
+        continue
+    platform = str(entry.get("platform") or (entry.get("origin") or {}).get("platform") or "").lower()
+    is_telegram = platform == "telegram" or str(key).startswith("telegram:")
+    if not is_telegram:
+        continue
+    if entry.get("resume_pending") or entry.get("suspended"):
+        blocked.append(str(key))
+    elif entry.get("status") in {"running", "active"} or entry.get("active"):
+        active.append(str(key))
+
+if blocked:
+    print("READY_WORKING=telegram_sessions_resume_pending_no_reconnect:" + ",".join(blocked[:5]))
+    raise SystemExit(0)
+
+if active:
+    print("READY_WORKING=telegram_sessions_active:" + ",".join(active[:5]))
+    raise SystemExit(0)
+
+print("READY_SESSIONS_OK=1")
+PY
+  sessions_state=$?
+
+  if [ ! -s "$h/.env" ]; then echo "READY_FAIL=missing_env:$h/.env"; return 1; fi
+  set -a; . "$h/.env"; set +a
+  token="${TELEGRAM_BOT_TOKEN:-}"
+  if [ -z "$token" ]; then echo "READY_FAIL=empty_telegram_token:$h"; return 1; fi
+  if [ "${HERMES_TRAY_FORCE_TELEGRAM_API_PROBES:-0}" = "1" ]; then
+    curl --max-time 8 -fsS "https://api.telegram.org/bot${token}/getMe" >"$telegram_json" 2>"$tmp_dir/telegram-${label}.err"
+    curl_code=$?
+    python3 - "$telegram_json" "$token" <<'PY' >"$telegram_txt" 2>&1
+import hashlib, json, sys
+from pathlib import Path
+try: data=json.load(open(sys.argv[1]))
+except Exception as exc:
+    print('READY_FAIL=telegram_json_error:'+str(exc)); raise SystemExit(42)
+if data.get('ok'):
+    result=data.get('result',{})
+    username=str(result.get('username','unknown'))
+    print('READY_TELEGRAM_BOT='+username)
+    short=hashlib.sha256(sys.argv[2].encode('utf-8')).hexdigest()[:12]
+    cache_path=Path('/home/ubuntu/.hermes/.runtime/telegram-bot-cache.json')
+    try: cache=json.loads(cache_path.read_text(encoding='utf-8'))
+    except Exception: cache={}
+    cache[short]={'id':str(result.get('id') or ''),'username':username}
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(json.dumps(cache, indent=2, sort_keys=True), encoding='utf-8')
+else:
+    print('READY_FAIL=telegram_getme_not_ok')
+    raise SystemExit(42)
+PY
+    telegram_code=$?
+    cat "$telegram_txt"
+    curl --max-time 8 -fsS "https://api.telegram.org/bot${token}/getWebhookInfo" >"$webhook_json" 2>"$tmp_dir/telegram-webhook-${label}.err"
+    webhook_curl_code=$?
+    python3 - "$webhook_json" <<'PY' >"$webhook_txt" 2>&1
+import json, sys
+try: data=json.load(open(sys.argv[1]))
+except Exception as exc:
+    print('READY_FAIL=telegram_webhook_json_error:'+str(exc)); raise SystemExit(43)
+if not data.get('ok'):
+    print('READY_FAIL=telegram_webhook_not_ok')
+    raise SystemExit(43)
+info=data.get('result',{})
+url=info.get('url') or ''
+pending=int(info.get('pending_update_count') or 0)
+if url:
+    print('READY_FAIL=telegram_webhook_still_set')
+    raise SystemExit(43)
+if pending > 0:
+    print('READY_FAIL=telegram_pending_updates_backlog:%s' % pending)
+    raise SystemExit(43)
+print('READY_TELEGRAM_PENDING_OK=0')
+PY
+    webhook_code=$?
+    cat "$webhook_txt"
+  else
+    curl_code=0
+    telegram_code=0
+    webhook_curl_code=0
+    webhook_code=0
+    python3 - "$token" <<'PY'
+import hashlib, json, sys
+from pathlib import Path
+short=hashlib.sha256(sys.argv[1].encode('utf-8')).hexdigest()[:12]
+cache_path=Path('/home/ubuntu/.hermes/.runtime/telegram-bot-cache.json')
+try: cache=json.loads(cache_path.read_text(encoding='utf-8'))
+except Exception: cache={}
+entry=cache.get(short) if isinstance(cache, dict) else None
+if isinstance(entry, dict) and entry.get('username'):
+    print('READY_TELEGRAM_BOT='+str(entry.get('username'))+' cached=1')
+else:
+    print('READY_TELEGRAM_API_DEFERRED=1 token_hash='+short)
+print('READY_TELEGRAM_PENDING_OK=deferred_polling_heartbeat_authoritative')
+PY
+  fi
+
+  if [ "$process_state" -eq 0 ] && [ "$tmux_state" -eq 0 ] && [ "$config_state" -eq 0 ] && [ "$runtime_state" -eq 0 ] && [ "$work_errors" -eq 0 ] && [ "$sessions_state" -eq 0 ] && [ "$curl_code" -eq 0 ] && [ "$telegram_code" -eq 0 ] && [ "$webhook_curl_code" -eq 0 ] && [ "$webhook_code" -eq 0 ]; then
+    echo "READY_HOME_OK=$h"
+    return 0
+  fi
+  echo "READY_FAIL_HOME=$h process:$process_state tmux:$tmux_state config:$config_state runtime:$runtime_state work_errors:$work_errors sessions:$sessions_state curl:$curl_code telegram:$telegram_code webhook_curl:$webhook_curl_code webhook:$webhook_code"
+  return 1
+}
+
+check_fleet_isolation() {
+  python3 - "$@" <<'PY'
+import hashlib
+import json
+import os
+import sys
+import urllib.request
+from pathlib import Path
+
+homes = [Path(p) for p in sys.argv[1:]]
+print(f"READY_FLEET_HOME_COUNT={len(homes)}")
+if not homes:
+    print("READY_FAIL=fleet_home_count_zero")
+    raise SystemExit(65)
+
+seen_homes = set()
+seen_sessions = {}
+seen_token_hashes = {}
+seen_usernames = {}
+seen_bot_ids = {}
+failures = []
+
+def session_for_home(home: Path) -> str:
+    if str(home) == "/home/ubuntu/.hermes":
+        return "hermes-gateway"
+    return "hermes-" + home.name.removeprefix(".hermes-")
+
+def parse_env(path: Path) -> dict[str, str]:
+    values = {}
+    for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip().strip("'\"")
+    return values
+
+for home in homes:
+    home_s = str(home)
+    if home_s in seen_homes:
+        failures.append(f"duplicate_home:{home_s}")
+    seen_homes.add(home_s)
+
+    session = session_for_home(home)
+    if session in seen_sessions:
+        failures.append(f"duplicate_tmux_session:{session}:{seen_sessions[session]}:{home_s}")
+    seen_sessions[session] = home_s
+
+    env_path = home / ".env"
+    if not env_path.exists():
+        failures.append(f"missing_env:{home_s}")
+        continue
+    env = parse_env(env_path)
+    token = env.get("TELEGRAM_BOT_TOKEN", "")
+    if not token:
+        failures.append(f"missing_token:{home_s}")
+        continue
+
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    short_hash = token_hash[:12]
+    if token_hash in seen_token_hashes:
+        failures.append(f"duplicate_telegram_token:{seen_token_hashes[token_hash]}:{home_s}")
+    seen_token_hashes[token_hash] = home_s
+    print(f"READY_FLEET_TOKEN_UNIQUE={home_s}")
+
+    # The tray watchdog hot path must not depend on Telegram's public API.
+    # During active chats and immediately after WSL boot, repeated getMe/getWebhookInfo
+    # probes across the whole fleet can transiently return empty/timeout responses,
+    # which made a healthy local polling fleet look yellow/recovering. Token uniqueness
+    # plus local gateway heartbeat is the authoritative hot-path readiness signal.
+    force_api = os.environ.get("HERMES_TRAY_FORCE_TELEGRAM_API_PROBES", "0").lower() in {"1", "true", "yes", "on"}
+    cache_path = Path("/home/ubuntu/.hermes/.runtime/telegram-bot-cache.json")
+    cache = {}
+    try:
+        cache = json.loads(cache_path.read_text(encoding="utf-8"))
+    except Exception:
+        cache = {}
+    cached = cache.get(short_hash) if isinstance(cache, dict) else None
+    data = None
+    if force_api or not isinstance(cached, dict):
+        try:
+            with urllib.request.urlopen(f"https://api.telegram.org/bot{token}/getMe", timeout=8) as response:
+                data = json.load(response)
+            if data.get("ok"):
+                result = data.get("result") or {}
+                cached = {"id": str(result.get("id") or ""), "username": str(result.get("username") or "")}
+                cache[short_hash] = cached
+                cache_path.parent.mkdir(parents=True, exist_ok=True)
+                cache_path.write_text(json.dumps(cache, indent=2, sort_keys=True), encoding="utf-8")
+        except Exception as exc:
+            if force_api:
+                failures.append(f"getme_failed:{home_s}:{exc}")
+                continue
+    if not isinstance(cached, dict):
+        cached = {"id": "cached-pending-" + short_hash, "username": "cached-pending-" + short_hash}
+        print(f"READY_FLEET_TELEGRAM_API_DEFERRED={home_s}")
+    bot_id = str(cached.get("id") or ("cached-pending-" + short_hash))
+    username = str(cached.get("username") or ("cached-pending-" + short_hash))
+    print(f"READY_FLEET_BOT_ID_OK={home_s}")
+    print(f"READY_FLEET_BOT_USERNAME_OK={home_s}")
+    if bot_id and not bot_id.startswith("cached-pending-"):
+        if bot_id in seen_bot_ids:
+            failures.append(f"duplicate_bot_id:{seen_bot_ids[bot_id]}:{home_s}:{bot_id}")
+        seen_bot_ids[bot_id] = home_s
+    if username and not username.startswith("cached-pending-"):
+        if username in seen_usernames:
+            failures.append(f"duplicate_bot_username:{seen_usernames[username]}:{home_s}:{username}")
+        seen_usernames[username] = home_s
+
+proc_owners = {}
+
+def is_gateway_argv(argv):
+    # Match actual gateway argv only, not shell/tool commands that merely contain this text.
+    for i in range(len(argv) - 2):
+        if argv[i].endswith('/hermes') and argv[i + 1:i + 3] == ['gateway', 'run']:
+            return True
+    for i in range(len(argv) - 3):
+        if os.path.basename(argv[i]).startswith('python'):
+            if argv[i + 1:i + 4] == ['-m', 'hermes_cli.main', 'gateway'] and len(argv) > i + 4 and argv[i + 4] == 'run':
+                return True
+    for i in range(len(argv) - 2):
+        if argv[i].endswith('/hermes_cli/main.py') and argv[i + 1:i + 3] == ['gateway', 'run']:
+            return True
+    return False
+
+for proc in Path("/proc").iterdir():
+    if not proc.name.isdigit():
+        continue
+    try:
+        argv = [x.decode("utf-8", "ignore") for x in (proc / "cmdline").read_bytes().split(b"\0") if x]
+    except Exception:
+        continue
+    if not is_gateway_argv(argv):
+        continue
+    try:
+        environ = (proc / "environ").read_bytes().decode("utf-8", "ignore").split("\0")
+    except Exception:
+        environ = []
+    env = dict(item.split("=", 1) for item in environ if "=" in item)
+    proc_home = env.get("HERMES_HOME") or "/home/ubuntu/.hermes"
+    proc_owners.setdefault(proc_home, []).append(proc.name)
+
+for home in map(str, homes):
+    pids = proc_owners.get(home, [])
+    if len(pids) != 1:
+        failures.append(f"fleet_process_owner_count:{home}:{','.join(pids) or 'none'}")
+
+extra = sorted(set(proc_owners) - {str(h) for h in homes})
+for home in extra:
+    failures.append(f"unexpected_gateway_process_home:{home}:{','.join(proc_owners[home])}")
+
+if failures:
+    for failure in failures:
+        print("READY_FAIL=" + failure)
+    raise SystemExit(65)
+
+print("READY_FLEET_ISOLATION_OK=1")
+PY
+}
+
+check_command_surface() {
+  HERMES_HOME="${HOME_DIR}/.hermes" "${HOME_DIR}/.hermes/hermes-agent/venv/bin/python" <<'PY'
+import sys
+from pathlib import Path
+
+repo = Path("/home/ubuntu/.hermes/hermes-agent")
+sys.path.insert(0, str(repo))
+
+from hermes_cli.commands import (
+    _sanitize_telegram_name,
+    resolve_command,
+    telegram_menu_commands,
+)
+from hermes_cli.config import read_raw_config
+
+required = ["nnew", "sstop", "all", "slash", "todoist", "image", "ps5", "ahk", "clean", "ccc"]
+cfg = read_raw_config()
+quick = cfg.get("quick_commands") if isinstance(cfg, dict) else {}
+if not isinstance(quick, dict):
+    quick = {}
+
+commands, hidden = telegram_menu_commands(max_commands=100)
+menu_names = {name for name, _desc in commands}
+quick_menu_missing = [
+    name for name in quick
+    if _sanitize_telegram_name(str(name)) not in menu_names
+]
+required_unresolved = [
+    name for name in required
+    if name not in quick and resolve_command(name) is None
+]
+required_menu_missing = [
+    name for name in required
+    if _sanitize_telegram_name(name) not in menu_names
+]
+
+if quick_menu_missing:
+    print("READY_FAIL=quick_commands_missing_from_native_menu:" + ",".join(quick_menu_missing[:20]))
+    raise SystemExit(66)
+if required_unresolved:
+    print("READY_FAIL=required_commands_unresolved:" + ",".join(required_unresolved))
+    raise SystemExit(66)
+if required_menu_missing:
+    print("READY_FAIL=required_commands_missing_from_native_menu:" + ",".join(required_menu_missing))
+    raise SystemExit(66)
+
+print(f"READY_COMMAND_SURFACE_OK=quick:{len(quick)} menu:{len(commands)} hidden:{hidden}")
+PY
+}
+
+check_menu_sync() {
+  local sync_script="${HOME_DIR}/.hermes/scripts/sync_telegram_clone_menus.py"
+  local tmp_dir="/tmp/hermes-tray-${USER_NAME}"
+  local cache_file="${HOME_DIR}/.hermes/.runtime/telegram-menu-sync.ok"
+  local current_hash cached_hash cached_epoch now max_age
+  mkdir -p "$tmp_dir" 2>/dev/null || true
+  if [ "$(id -u)" -eq 0 ]; then
+    chown -R "$USER_NAME:$USER_NAME" "$tmp_dir" 2>/dev/null || true
+  elif [ ! -w "$tmp_dir" ] && command -v sudo >/dev/null 2>&1; then
+    sudo chown -R "$USER_NAME:$USER_NAME" "$tmp_dir" 2>/dev/null || true
+  fi
+  if [ ! -x "$sync_script" ] && [ ! -f "$sync_script" ]; then
+    echo "READY_FAIL=telegram_menu_sync_script_missing:$sync_script"
+    return 67
+  fi
+  current_hash="$(sha256sum "${HOME_DIR}/.hermes/config.yaml" 2>/dev/null | awk '{print $1}' || true)"
+  cached_hash="$(sed -n '1p' "$cache_file" 2>/dev/null | tr -d '[:space:]' || true)"
+  cached_epoch="$(sed -n '2p' "$cache_file" 2>/dev/null | tr -d '[:space:]' || echo 0)"
+  now="$(date +%s)"
+  max_age="${HERMES_TRAY_MENU_CACHE_SECONDS:-86400}"
+  if [ "${HERMES_TRAY_FORCE_MENU_SYNC:-0}" != "1" ] && [ -n "$current_hash" ] && [ "$current_hash" = "$cached_hash" ] && [ $((now - ${cached_epoch:-0})) -le "$max_age" ]; then
+    echo "READY_TELEGRAM_MENUS_OK=1 cached=1"
+    return 0
+  fi
+  timeout 55s env HERMES_HOME="${HOME_DIR}/.hermes" TELEGRAM_MENU_API_TIMEOUT=8 \
+    "${HOME_DIR}/.hermes/hermes-agent/venv/bin/python" "$sync_script" >"$tmp_dir/telegram-menu-sync.out" 2>"$tmp_dir/telegram-menu-sync.err"
+  local rc=$?
+  if [ "$rc" -ne 0 ]; then
+    echo "READY_FAIL=telegram_menu_sync_failed:$rc"
+    sed -n '1,12p' "$tmp_dir/telegram-menu-sync.err" 2>/dev/null || true
+    return 67
+  fi
+  { printf '%s\n' "$current_hash"; date +%s; } >"$cache_file" 2>/dev/null || true
+  chown "$USER_NAME:$USER_NAME" "$cache_file" 2>/dev/null || true
+  echo "READY_TELEGRAM_MENUS_OK=1"
+}
+
+check_hooks_available() {
+  HERMES_HOME="${HOME_DIR}/.hermes" "${HOME_DIR}/.hermes/hermes-agent/venv/bin/python" <<'PY'
+import importlib.util
+import sys
+from pathlib import Path
+
+import yaml
+
+hooks_dir = Path("/home/ubuntu/.hermes/hooks")
+loaded = 0
+if not hooks_dir.exists():
+    print("READY_FAIL=hooks_dir_missing")
+    raise SystemExit(68)
+
+for hook_dir in sorted(p for p in hooks_dir.iterdir() if p.is_dir()):
+    manifest = hook_dir / "HOOK.yaml"
+    handler = hook_dir / "handler.py"
+    if not manifest.exists() and not handler.exists():
+        continue
+    if not manifest.exists() or not handler.exists():
+        print(f"READY_FAIL=hook_incomplete:{hook_dir.name}")
+        raise SystemExit(68)
+    data = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or not data.get("events"):
+        print(f"READY_FAIL=hook_manifest_invalid:{hook_dir.name}")
+        raise SystemExit(68)
+    spec = importlib.util.spec_from_file_location(f"health_hook_{hook_dir.name}", handler)
+    if spec is None or spec.loader is None:
+        print(f"READY_FAIL=hook_import_spec_failed:{hook_dir.name}")
+        raise SystemExit(68)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    if not hasattr(module, "handle"):
+        print(f"READY_FAIL=hook_handle_missing:{hook_dir.name}")
+        raise SystemExit(68)
+    loaded += 1
+
+print(f"READY_HOOKS_OK={loaded}")
+PY
+}
+
+check_hermes_ownership() {
+  local bad
+  bad="$(find "${HOME_DIR}/.hermes" "${HOME_DIR}"/.hermes-* -xdev \( -not -user "$USER_NAME" -o -not -group "$USER_NAME" \) -print -quit 2>/dev/null || true)"
+  if [ -n "$bad" ]; then
+    echo "READY_FAIL=hermes_ownership_drift:$bad"
+    return 69
+  fi
+  echo "READY_OWNERSHIP_OK=1"
+}
+
+check_runtime_file_modes() {
+  local h mode
+  for h in "${homes[@]}"; do
+    for file in "$h/gateway.pid" "$h/gateway.lock"; do
+      [ -e "$file" ] || continue
+      mode="$(stat -c %a "$file" 2>/dev/null || echo unknown)"
+      case "$mode" in
+        600|640|660) ;;
+        *)
+          echo "READY_FAIL=runtime_file_mode_drift:$file:$mode"
+          return 70
+          ;;
+      esac
+    done
+  done
+  echo "READY_RUNTIME_FILE_MODES_OK=1"
+}
+
+check_runtime_isolation() {
+  local h item path
+  for h in "${homes[@]}"; do
+    for item in sessions logs cache .runtime gateway_state.json processes.json channel_directory.json; do
+      path="$h/$item"
+      if [ ! -e "$path" ]; then
+        echo "READY_FAIL=runtime_isolation_missing:$path"
+        return 71
+      fi
+      if [ -L "$path" ]; then
+        echo "READY_FAIL=runtime_isolation_symlink:$path"
+        return 71
+      fi
+    done
+  done
+  echo "READY_RUNTIME_ISOLATION_OK=1"
+}
+
+homes=()
+while IFS= read -r h; do homes+=("$h"); done < <(discover_homes)
+if [ "${#homes[@]}" -eq 0 ]; then echo "READY_FAIL=no_telegram_homes"; exit 50; fi
+
+overall=0
+check_command_surface || overall=1
+check_menu_sync || overall=1
+check_hooks_available || overall=1
+check_hermes_ownership || overall=1
+check_runtime_file_modes || overall=1
+check_runtime_isolation || overall=1
+check_fleet_isolation "${homes[@]}" || overall=1
+home_tmp_dir="/tmp/hermes-tray-${USER_NAME}/home-checks-$$"
+mkdir -p "$home_tmp_dir" 2>/dev/null || true
+if [ "$(id -u)" -eq 0 ]; then chown -R "$USER_NAME:$USER_NAME" "$home_tmp_dir" 2>/dev/null || true; fi
+home_pids=()
+for h in "${homes[@]}"; do
+  label="$(basename "$h")"
+  ( check_home "$h" >"$home_tmp_dir/$label.out" 2>&1 ) &
+  home_pids+=("$!:$label")
+done
+for item in "${home_pids[@]}"; do
+  pid="${item%%:*}"
+  label="${item#*:}"
+  if ! wait "$pid"; then overall=1; fi
+  cat "$home_tmp_dir/$label.out" 2>/dev/null || true
+done
+rm -rf "$home_tmp_dir" 2>/dev/null || true
+
+if [ "$overall" -eq 0 ]; then
+  echo "READY_OK=1"
+  exit 0
+fi
+
+echo "READY_FAIL=fleet_not_ready"
+exit 50

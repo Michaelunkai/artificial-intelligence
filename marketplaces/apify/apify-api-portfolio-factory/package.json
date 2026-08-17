@@ -1,0 +1,48 @@
+{
+  "name": "apify-api-portfolio-factory",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A production-ready Apify Actor portfolio factory for building and selling small API-style Actors.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "lint": "eslint .",
+    "start": "tsx src/main.ts",
+    "site:dev": "vite --host 127.0.0.1",
+    "site:build": "vite build",
+    "site:preview": "vite preview --host 127.0.0.1",
+    "permission:test": "tsx scripts/test-apify-permissions.ts",
+    "deploy": "tsx scripts/deploy-actor.ts",
+    "smoke:apify": "tsx scripts/smoke-apify-run.ts",
+    "run:local": "tsx scripts/run-local.ts",
+    "scan:secrets": "tsx scripts/scan-secrets.ts",
+    "verify": "npm run build && npm run site:build && npm run lint && npm run test && npm run scan:secrets"
+  },
+  "dependencies": {
+    "apify": "^3.4.2",
+    "cheerio": "^1.1.2",
+    "lucide-react": "^1.23.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "@types/node": "^24.0.15",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "eslint": "^9.32.0",
+    "playwright": "^1.61.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.62.1",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

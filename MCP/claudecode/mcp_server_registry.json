@@ -1,0 +1,296 @@
+﻿{
+    "servers":  {
+                    "tavily":  {
+                                   "args":  [
+                                                "-y",
+                                                "tavily-mcp@latest"
+                                            ],
+                                   "env":  {
+                                               "TAVILY_API_KEY":  ""
+                                           },
+                                   "command":  "npx"
+                               },
+                    "todoist":  {
+                                    "args":  [
+                                                 "-y",
+                                                 "@abhiz123/todoist-mcp-server"
+                                             ],
+                                    "env":  {
+                                                "TODOIST_API_TOKEN":  "2c95242afc4457bd1ad3395b6f77da1e6d3dadde"
+                                            },
+                                    "command":  "npx"
+                                },
+                    "postgres":  {
+                                     "args":  [
+                                                  "@modelcontextprotocol/server-postgres",
+                                                  "postgresql://raz%40tovtech.org:CaptainForgotCreatureBreak@45.148.28.196:5432/TovPlay"
+                                              ],
+                                     "env":  {
+
+                                             },
+                                     "command":  "npx"
+                                 },
+                    "windows-mcp":  {
+                                        "args":  [
+                                                     "-y",
+                                                     "@darbotlabs/darbot-windows-mcp"
+                                                 ],
+                                        "env":  {
+
+                                                },
+                                        "command":  "npx"
+                                    },
+                    "mongodb":  {
+                                    "args":  [
+                                                 "-y",
+                                                 "mongodb-mcp-server"
+                                             ],
+                                    "env":  {
+
+                                            },
+                                    "command":  "npx"
+                                },
+                    "deep-research":  {
+                                          "args":  [
+                                                       "mcp-deep-research"
+                                                   ],
+                                          "env":  {
+
+                                                  },
+                                          "command":  "npx"
+                                      },
+                    "filesystem":  {
+                                       "args":  [
+                                                    "@modelcontextprotocol/server-filesystem",
+                                                    "C:/",
+                                                    "F:/"
+                                                ],
+                                       "env":  {
+
+                                               },
+                                       "command":  "npx"
+                                   },
+                    "zapier":  {
+                                   "env":  {
+
+                                           },
+                                   "url":  "https://mcp.zapier.com/api/mcp/mcp",
+                                   "headers":  {
+                                                   "Authorization":  "Bearer OTFjZDQyODAtZDBhYy00YzdiLWI5NGYtYmMwMzY5MGE5YjMwOmM3ODAwNWU1LTIyZDQtNDVjNS1hZTIzLWY3ZDYxNTg5MWU4Mw=="
+                                               },
+                                   "type":  "http"
+                               },
+                    "memory":  {
+                                   "args":  [
+                                                "@modelcontextprotocol/server-memory"
+                                            ],
+                                   "env":  {
+
+                                           },
+                                   "command":  "npx"
+                               },
+                    "sequential-thinking":  {
+                                                "args":  [
+                                                             "@modelcontextprotocol/server-sequential-thinking"
+                                                         ],
+                                                "env":  {
+
+                                                        },
+                                                "command":  "npx"
+                                            },
+                    "smart-crawler":  {
+                                          "args":  [
+                                                       "mcp-smart-crawler"
+                                                   ],
+                                          "env":  {
+
+                                                  },
+                                          "command":  "npx"
+                                      },
+                    "everything":  {
+                                       "args":  [
+                                                    "everything-mcp"
+                                                ],
+                                       "env":  {
+
+                                               },
+                                       "command":  "npx"
+                                   },
+                    "github":  {
+                                   "args":  [
+                                                "@modelcontextprotocol/server-github"
+                                            ],
+                                   "env":  {
+
+                                           },
+                                   "command":  "npx"
+                               },
+                    "docker":  {
+                                   "args":  [
+                                                "-y",
+                                                "mcp-server-docker"
+                                            ],
+                                   "env":  {
+
+                                           },
+                                   "command":  "npx"
+                               },
+                    "firecrawl":  {
+                                      "args":  [
+                                                   "-y",
+                                                   "firecrawl-mcp"
+                                               ],
+                                      "env":  {
+
+                                              },
+                                      "command":  "npx"
+                                  },
+                    "context7":  {
+                                     "args":  [
+                                                  "-y",
+                                                  "@upstash/context7-mcp",
+                                                  "--api-key",
+                                                  "ctx7sk-c777d86e-785c-4d34-a350-71fb59250be7"
+                                              ],
+                                     "env":  {
+
+                                             },
+                                     "command":  "npx"
+                                 },
+                    "mcp-pyautogui":  {
+                                          "args":  [
+                                                       "mcp-pyautogui-server"
+                                                   ],
+                                          "env":  {
+
+                                                  },
+                                          "command":  "uvx"
+                                      },
+                    "read-website-fast":  {
+                                              "args":  [
+                                                           "-y",
+                                                           "@just-every/mcp-read-website-fast"
+                                                       ],
+                                              "env":  {
+
+                                                      },
+                                              "command":  "npx"
+                                          },
+                    "youtube":  {
+                                    "args":  [
+                                                 "-y",
+                                                 "@sinco-lab/mcp-youtube-transcript"
+                                             ],
+                                    "env":  {
+
+                                            },
+                                    "command":  "npx"
+                                },
+                    "sentry":  {
+                                   "args":  [
+                                                "-y",
+                                                "@sentry/mcp-server"
+                                            ],
+                                   "env":  {
+                                               "SENTRY_AUTH_TOKEN":  "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"
+                                           },
+                                   "command":  "npx"
+                               },
+                    "figma":  {
+                                  "args":  [
+                                               "figma-mcp"
+                                           ],
+                                  "env":  {
+
+                                          },
+                                  "command":  "npx"
+                              },
+                    "mcp-installer":  {
+                                          "args":  [
+                                                       "-y",
+                                                       "@anaisbetts/mcp-installer"
+                                                   ],
+                                          "env":  {
+
+                                                  },
+                                          "command":  "npx"
+                                      },
+                    "knowledge-graph":  {
+                                            "args":  [
+                                                         "-y",
+                                                         "mcp-knowledge-graph"
+                                                     ],
+                                            "env":  {
+
+                                                    },
+                                            "command":  "npx"
+                                        },
+                    "deepwiki":  {
+                                     "args":  [
+                                                  "deepwiki-mcp"
+                                              ],
+                                     "env":  {
+
+                                             },
+                                     "command":  "npx"
+                                 },
+                    "puppeteer":  {
+                                      "args":  [
+                                                   "@modelcontextprotocol/server-puppeteer"
+                                               ],
+                                      "env":  {
+
+                                              },
+                                      "command":  "npx"
+                                  },
+                    "playwright":  {
+                                       "args":  [
+                                                    "@playwright/mcp"
+                                                ],
+                                       "env":  {
+
+                                               },
+                                       "command":  "npx"
+                                   },
+                    "fast-playwright":  {
+                                            "args":  [
+                                                         "-y",
+                                                         "@tontoko/fast-playwright-mcp"
+                                                     ],
+                                            "env":  {
+
+                                                    },
+                                            "command":  "npx"
+                                        },
+                    "exa":  {
+                                "args":  [
+                                             "-y",
+                                             "exa-mcp-server"
+                                         ],
+                                "env":  {
+
+                                        },
+                                "command":  "npx"
+                            },
+                    "mcp-summarization":  {
+                                              "args":  [
+                                                           "-y",
+                                                           "mcp-summarization-functions"
+                                                       ],
+                                              "env":  {
+
+                                                      },
+                                              "command":  "npx"
+                                          },
+                    "graphql":  {
+                                    "args":  [
+                                                 "-y",
+                                                 "mcp-graphql"
+                                             ],
+                                    "env":  {
+
+                                            },
+                                    "command":  "npx"
+                                }
+                }
+}

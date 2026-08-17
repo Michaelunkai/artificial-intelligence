@@ -1,0 +1,1 @@
+Create /tmp/nature-final-progress-proof.txt containing exactly FINAL_PROGRESS_OK, read it back, verify the exact content, then report the verified full path and content.

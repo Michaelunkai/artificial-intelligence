@@ -1,0 +1,6 @@
+﻿HermesFleetDoctor log: F:\study\AI_ML\AI_and_Machine_Learning\Artificial_Intelligence\hermes\AutoBackRes\HermesFleetDoctor\logs\HermesFleetDoctor-20260628-201745.log
+health_exit=124
+health_matcher_patch=True
+tray_running=True
+preserve_first=true
+forced_close_healthy_sessions=false

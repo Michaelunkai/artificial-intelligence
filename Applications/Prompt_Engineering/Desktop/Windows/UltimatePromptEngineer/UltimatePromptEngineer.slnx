@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="UltimatePromptEngineer.csproj" />
+  <Project Path="UltimatePromptEngineer.Tests/UltimatePromptEngineer.Tests.csproj" />
+</Solution>

@@ -1,0 +1,12 @@
+{
+  "mission": "PS5 backher/resher standalone wrappers with live progress from second 2",
+  "repo_root_wsl": "/mnt/f/study/AI_ML/AI_and_Machine_Learning/Artificial_Intelligence/hermes/AutoBackRes/PowerShell/ProfileMissions/backher-resher-live-progress-20260511-2035",
+  "selected_deep_path_wsl": "/mnt/f/study/AI_ML/AI_and_Machine_Learning/Artificial_Intelligence/hermes/AutoBackRes/PowerShell/ProfileMissions",
+  "production_files_copied_not_moved_to_preserve_working_functions": [
+    "/mnt/f/study/AI_ML/AI_and_Machine_Learning/Artificial_Intelligence/hermes/AutoBackRes/backher-fast.ps1",
+    "/mnt/f/study/AI_ML/AI_and_Machine_Learning/Artificial_Intelligence/hermes/AutoBackRes/resher-fast.ps1",
+    "/mnt/c/Users/micha/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1"
+  ],
+  "latest_real_backup_dir_not_moved_because_it_is_large_live_runtime_data": "/mnt/f/study/AI_ML/AI_and_Machine_Learning/Artificial_Intelligence/hermes/AutoBackRes/backups/20260511-202139",
+  "latest_backup_files": []
+}

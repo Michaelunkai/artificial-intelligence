@@ -1,0 +1,45 @@
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+*.swp
+*.bak~
+
+# PowerShell/runtime noise
+*.log
+*.pid
+*.lock
+Transcript*.txt
+
+# Python/test/editor caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node/build caches if future helpers are added
+node_modules/
+dist/
+build/
+.cache/
+
+# Secrets/config overrides
+.env
+.env.*
+*.secret
+secrets.*
+
+# Large backup archives and extracted backup payloads should not be committed
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+backups/
+*/backups/
+!artifacts/backups/
+!artifacts/backups/**
+hermes-wsl-data.tar.gz

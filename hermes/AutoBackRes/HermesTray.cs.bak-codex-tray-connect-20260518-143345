@@ -1,0 +1,1485 @@
+using System;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
+
+namespace HermesTray
+{
+    internal static class Program
+    {
+        [STAThread]
+        private static void Main(string[] args)
+        {
+            if (args != null && args.Length > 0 && string.Equals(args[0], "--dashboard", StringComparison.OrdinalIgnoreCase))
+            {
+                Dashboard.Open("manual dashboard launch");
+                return;
+            }
+            if (args != null && args.Length > 0 && string.Equals(args[0], "--mission-control-smoke", StringComparison.OrdinalIgnoreCase))
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                var context = new TrayContext(false);
+                try
+                {
+                    File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mission-control-smoke.txt"), "MISSION_CONTROL_BUTTONS=" + context.MissionControlButtonCountForTest() + Environment.NewLine, Encoding.UTF8);
+                    return;
+                }
+                finally
+                {
+                    context.DisposeForSmokeTest();
+                }
+            }
+            if (args != null && args.Length > 0 && string.Equals(args[0], "--menu-smoke", StringComparison.OrdinalIgnoreCase))
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                var context = new TrayContext(false);
+                try
+                {
+                    File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "menu-smoke.txt"), context.MenuSmokeReportForTest(), Encoding.UTF8);
+                    return;
+                }
+                finally
+                {
+                    context.DisposeForSmokeTest();
+                }
+            }
+
+            bool created;
+            using (var mutex = new Mutex(true, "Global\\HermesWsl2TrayAutoBackRes", out created))
+            {
+                if (!created)
+                {
+                    return;
+                }
+
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new TrayContext());
+            }
+        }
+    }
+
+    internal sealed class TrayContext : ApplicationContext
+    {
+        private static readonly string Root = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        private static readonly string ResumeWslPath = ToWslPath(Path.Combine(Root, "resume.sh"));
+        private static readonly string HealthWslPath = ToWslPath(Path.Combine(Root, "hermes-tray-health.sh"));
+        private static readonly string GatewayProcessCheckWslPath = ToWslPath(Path.Combine(Root, "hermes-gateway-process-check.sh"));
+        private static readonly string ManualStopFile = Path.Combine(Root, "manual-stop.marker");
+        private const string Distro = "ubuntu";
+        private const int GatewayReadyWaitMs = 10000;
+        private const int GatewayReadyPollMs = 1000;
+        private const int WatchdogSelfHealCooldownMs = 30000;
+        private const int MinimumTelegramHomes = 5;
+        private readonly NotifyIcon tray;
+        private readonly System.Windows.Forms.Timer watchdog;
+        private readonly object gate = new object();
+        private readonly Icon greenIcon;
+        private readonly Icon yellowIcon;
+        private readonly Icon redIcon;
+        private readonly Icon purpleIcon;
+        private Form missionControl;
+        private Label missionStatusLabel;
+        private bool busy;
+        private DateTime lastSelfHealAttemptUtc = DateTime.MinValue;
+        private string lastStatus = "starting";
+        private readonly string logFile;
+
+        private sealed class GatewayHealthResult
+        {
+            public bool Healthy;
+            public bool Working;
+            public int ExitCode;
+            public string Output;
+        }
+
+        public TrayContext() : this(true)
+        {
+        }
+
+        public TrayContext(bool startGateway)
+        {
+            Directory.CreateDirectory(Root);
+            logFile = Path.Combine(Root, "HermesTray.log");
+            greenIcon = CreateStatusIcon(Color.LimeGreen);
+            yellowIcon = CreateStatusIcon(Color.Gold);
+            redIcon = CreateStatusIcon(Color.Red);
+            purpleIcon = CreateStatusIcon(Color.MediumPurple);
+            tray = new NotifyIcon();
+            tray.Icon = yellowIcon;
+            tray.Text = "Hermes WSL2 Gateway";
+            tray.Visible = startGateway;
+            tray.ContextMenuStrip = BuildMenu();
+            tray.DoubleClick += delegate { RunReconnect("manual double-click"); };
+
+            watchdog = new System.Windows.Forms.Timer();
+            // Fast post-WSL recovery: check every second so the icon can go
+            // green within 5 seconds after WSL is available again.
+            watchdog.Interval = 1000;
+            watchdog.Tick += delegate { WatchdogTick(); };
+
+            Log("Hermes tray started");
+            if (startGateway)
+            {
+                watchdog.Start();
+                // Do not unconditionally reconnect on tray startup: that can
+                // interrupt live Telegram work. Run the normal watchdog path,
+                // which health-checks first and only self-heals if a bot is
+                // actually missing/unhealthy.
+                WatchdogTick();
+            }
+        }
+
+        private ContextMenuStrip BuildMenu()
+        {
+            var menu = new ContextMenuStrip();
+            menu.Items.Add("Reconnect Now", null, delegate { RunReconnect("manual reconnect"); });
+            menu.Items.Add("Restart Gateway", null, delegate { RunRestart(); });
+            menu.Items.Add("Update Hermes", null, delegate { RunUpdate(); });
+            menu.Items.Add("Get Hermes", null, delegate { RunGetHermes(); });
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Backup Now", null, delegate { RunBackher(); });
+            menu.Items.Add("Clean Backup", null, delegate { RunCleanBackup(); });
+            menu.Items.Add("Restore Now", null, delegate { RunPowerShellScript("restore-hermes-wsl2.ps1", "restore"); });
+            menu.Items.Add("Validate Latest Restore", null, delegate { RunPowerShellScript("restore-hermes-wsl2.ps1", "restore validation", "-ValidateOnly"); });
+            menu.Items.Add("Get Hermes FULL", null, delegate { RunGetHermesFull(); });
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Manual Stop Gateway", null, delegate { PauseGateway(); });
+            menu.Items.Add("Resume Hermes Gateway", null, delegate { ResumeGateway(); });
+            menu.Items.Add("Health Monitor On", null, delegate { TogglePause(); });
+            menu.Items.Add("Status Check", null, delegate { RunStatus(); });
+            menu.Items.Add("Hermes Dashboard", null, delegate { RunHermesDashboard(); });
+            menu.Items.Add("Global Dashboard", null, delegate { RunGlobalHermesDashboard(); });
+            menu.Items.Add("Mission Control", null, delegate { OpenMissionControl(); });
+            menu.Items.Add("Browser Control", null, delegate { RunBrowserControl(); });
+            menu.Items.Add("Restart WSL", null, delegate { RunRestartWsl(); });
+            menu.Items.Add("Copy Last Status", null, delegate { CopyLastStatus(); });
+            menu.Items.Add("Open Logs Folder", null, delegate { OpenLogsFolder(); });
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Exit Tray", null, delegate { ExitThread(); });
+            return menu;
+        }
+
+        private void WatchdogTick()
+        {
+            if (busy)
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                if (IsManualStopRequested())
+                {
+                    SetStatus("manual stop");
+                    return;
+                }
+
+                var health = CheckGatewayHealth();
+                if (health.Healthy)
+                {
+                    SetStatus(health.Working ? "working" : "healthy");
+                    return;
+                }
+
+                if (!IsGatewayProcessRunning())
+                {
+                    Log("Watchdog detected no Hermes gateway process; starting post-WSL boot recovery.");
+                    RunReconnect("watchdog post-wsl recovery");
+                    return;
+                }
+
+                if (IsRecoverableHealthFailure(health))
+                {
+                    string reason = FirstReadyFailure(health.Output);
+                    var elapsedMs = (DateTime.UtcNow - lastSelfHealAttemptUtc).TotalMilliseconds;
+                    // Do not paint the tray yellow for recoverable watchdog work.
+                    // The health/resume scripts distinguish real failures; during safe
+                    // self-heal we keep the icon green/working so transient checks do
+                    // not get stuck visually as "recovering".
+                    SetStatus("working");
+                    if (elapsedMs >= WatchdogSelfHealCooldownMs)
+                    {
+                        lastSelfHealAttemptUtc = DateTime.UtcNow;
+                        Log("Watchdog detected recoverable unhealthy fleet (" + reason + "); running safe resume.");
+                        RunReconnect("watchdog recoverable health: " + reason);
+                        return;
+                    }
+
+                    Log("Watchdog detected recoverable unhealthy fleet (" + reason + ") inside cooldown; waiting before retry.");
+                    return;
+                }
+
+                SetStatus("not healthy");
+                Log("Watchdog detected unrecoverable unhealthy fleet with a gateway process still running; not reconnecting automatically. " + FirstReadyFailure(health.Output));
+            });
+        }
+
+        private bool IsRecoverableHealthFailure(GatewayHealthResult health)
+        {
+            if (health == null)
+            {
+                return true;
+            }
+
+            string output = health.Output ?? string.Empty;
+            string[] recoverableMarkers = new string[]
+            {
+                "READY_FAIL=duplicate_or_missing_gateway_processes",
+                "READY_FAIL=config_changed_requires_gateway_reload",
+                "READY_FAIL=runtime_state_metadata_mismatch",
+                "READY_FAIL=runtime_state_no_pid",
+                "READY_FAIL=telegram_polling_not_running",
+                "READY_FAIL=telegram_polling_heartbeat_missing",
+                "READY_FAIL=telegram_polling_heartbeat_bad_timestamp",
+                "READY_FAIL=telegram_polling_heartbeat_stale",
+                "READY_FAIL=telegram_unanswered_work_stale",
+                "READY_FAIL=recent_gateway_error",
+                "READY_FAIL=telegram_sessions_blocked",
+                "READY_FAIL=telegram_pending_updates_backlog",
+                "READY_FAIL=telegram_menu_sync_failed",
+                "READY_FAIL=fleet_not_ready",
+                "READY_FAIL_HOME="
+            };
+
+            foreach (string marker in recoverableMarkers)
+            {
+                if (output.IndexOf(marker, StringComparison.Ordinal) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private string FirstReadyFailure(string output)
+        {
+            if (string.IsNullOrEmpty(output))
+            {
+                return "no health output";
+            }
+
+            string[] lines = output.Replace("\r\n", "\n").Split('\n');
+            foreach (string rawLine in lines)
+            {
+                string line = rawLine.Trim();
+                if (line.StartsWith("READY_FAIL=", StringComparison.Ordinal) || line.StartsWith("READY_FAIL_HOME=", StringComparison.Ordinal))
+                {
+                    return line.Length > 180 ? line.Substring(0, 180) : line;
+                }
+            }
+
+            return "exit=" + (output.Length > 180 ? output.Substring(0, 180) : output);
+        }
+
+        private bool TryEnterWork()
+        {
+            lock (gate)
+            {
+                if (busy)
+                {
+                    return false;
+                }
+                busy = true;
+                return true;
+            }
+        }
+
+        private void LeaveWork()
+        {
+            lock (gate)
+            {
+                busy = false;
+            }
+        }
+
+        private void RunReconnect(string reason)
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    ClearManualStop();
+                    SetStatus("reconnecting");
+                    string command = "env HERMES_TRAY_FAST_BOOT=1 HERMES_TRAY_GATEWAY_READY_TIMEOUT_SECONDS=4 HERMES_TRAY_GATEWAY_READY_POLL_SECONDS=0.2 bash " + Quote(ResumeWslPath);
+                    var result = RunHidden("wsl.exe", "-d " + Distro + " -u root -- bash -lc " + Quote(command), 180000);
+                    Log("Reconnect (" + reason + ") exit=" + result.ExitCode + Environment.NewLine + result.Output);
+                    if (result.ExitCode == 75 && result.Output.IndexOf("already running", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        Log("Reconnect (" + reason + ") found an existing resume in progress; waiting for final green readiness instead of leaving the icon yellow.");
+                        SetReadyAfterAction(true, "resume wait failed");
+                        return;
+                    }
+                    SetReadyAfterAction(result.ExitCode == 0, "resume failed");
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void RunRestart()
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    ClearManualStop();
+                    SetStatus("restarting");
+                    string command = "/usr/local/sbin/hermes-create-manual-gateway-intent restart; "
+                        + "sudo -H -u ubuntu env HERMES_ALLOW_GATEWAY_STOP=manual-intent /home/ubuntu/.hermes/scripts/restart_telegram_gateway_fleet_once.sh; "
+                        + "rc=$?; if [ \"$rc\" -ne 0 ]; then exit \"$rc\"; fi; "
+                        + "/usr/local/sbin/hermes-create-manual-gateway-intent resume-after-restart; "
+                        + "env HERMES_ALLOW_GATEWAY_STOP=manual-intent HERMES_FORCE_GATEWAY_RESTART_DURING_WORK=manual-root-danger HERMES_TRAY_SEND_READY_PROBE_ALL=1 bash " + Quote(ResumeWslPath);
+                    var result = RunHidden("wsl.exe", "-d " + Distro + " -u root -- bash -lc " + Quote(command), 180000);
+                    Log("Restart exit=" + result.ExitCode + Environment.NewLine + result.Output);
+                    SetReadyAfterAction(result.ExitCode == 0, "restart failed");
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void RunUpdate()
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    ClearManualStop();
+                    SetStatus("updating");
+                    string command = "/usr/local/sbin/hermes-create-manual-gateway-intent update; sudo -H -u ubuntu env HERMES_ALLOW_GATEWAY_STOP=manual-intent PATH=\"/home/ubuntu/.local/bin:/home/ubuntu/.hermes/node/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/snap/bin\" /home/ubuntu/.local/bin/hermes update; /usr/local/sbin/hermes-create-manual-gateway-intent resume-after-update; env HERMES_ALLOW_GATEWAY_STOP=manual-intent bash " + Quote(ResumeWslPath);
+                    var result = RunHidden("wsl.exe", "-d " + Distro + " -u root -- bash -lc " + Quote(command), 900000);
+                    Log("Update exit=" + result.ExitCode + Environment.NewLine + result.Output);
+                    SetReadyAfterAction(result.ExitCode == 0, "update failed");
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void RunGetHermes()
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    ClearManualStop();
+                    SetStatus("getting hermes");
+                    string command = "Set-Location -LiteralPath " + PsSingleQuote(Root) + "; ws 'as'";
+                    string args = "-NoLogo -ExecutionPolicy Bypass -Command " + Quote(command);
+                    var result = RunHidden(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe"), args, 1800000);
+                    Log("Get Hermes exit=" + result.ExitCode + Environment.NewLine + result.Output);
+                    SetReadyAfterAction(result.ExitCode == 0, "get hermes failed");
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void RunCleanBackup()
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe");
+                    string purgeScript = Path.Combine(Root, "purge-backups-fast.ps1");
+                    string backupScript = Path.Combine(Root, "backup-hermes-wsl2.ps1");
+
+                    SetStatus("clean backup purging");
+                    string purgeArgs = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File " + Quote(purgeScript);
+                    var purgeResult = RunHidden(ps, purgeArgs, 1800000);
+                    Log("Clean Backup purge exit=" + purgeResult.ExitCode + Environment.NewLine + purgeResult.Output);
+
+                    if (purgeResult.ExitCode != 0)
+                    {
+                        SetStatus("clean backup purge failed");
+                        return;
+                    }
+
+                    SetStatus("clean backup creating");
+                    string backupArgs = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File " + Quote(backupScript);
+                    var backupResult = RunHidden(ps, backupArgs, 1800000);
+                    Log("Clean Backup backup exit=" + backupResult.ExitCode + Environment.NewLine + backupResult.Output);
+                    SetReadyAfterAction(backupResult.ExitCode == 0, "clean backup failed");
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void RunBackher()
+        {
+            RunPowerShellCommand("backher", "backup", "Set-Location -LiteralPath " + PsSingleQuote(Root) + "; backher", 1800000);
+        }
+
+        private void RunHermesDashboard()
+        {
+            RunPowerShellFile(Path.Combine(Root, "open-hermes-dashboard.ps1"), "hermes dashboard", 180000);
+        }
+
+        private void RunGlobalHermesDashboard()
+        {
+            RunPowerShellFile(Path.Combine(Root, "open-hermes-dashboard.ps1"), "global dashboard", 240000, "-GlobalDashboard");
+        }
+
+        private void RunBrowserControl()
+        {
+            RunPowerShellFile(Path.Combine(Root, "open-hermes-browser-control.ps1"), "browser control", 180000);
+        }
+
+        private void RunRestartWsl()
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    SetStatus("wsl restarting");
+                    string resumeCommand = "/usr/local/sbin/hermes-create-manual-gateway-intent restart-wsl; env HERMES_ALLOW_GATEWAY_STOP=manual-intent HERMES_TRAY_SEND_READY_PROBE_ALL=1 bash " + Quote(ResumeWslPath);
+                    var shutdown = RunHidden("wsl.exe", "--shutdown", 60000);
+                    Log("Restart WSL shutdown exit=" + shutdown.ExitCode + Environment.NewLine + shutdown.Output);
+
+                    CommandResult result = new CommandResult(1, "resume was not attempted");
+                    DateTime deadline = DateTime.UtcNow.AddMilliseconds(GatewayReadyWaitMs);
+                    do
+                    {
+                        Thread.Sleep(GatewayReadyPollMs);
+                        result = RunHidden("wsl.exe", "-d " + Distro + " -u root -- bash -lc " + Quote(resumeCommand), 180000);
+                        if (result.ExitCode == 0)
+                        {
+                            break;
+                        }
+                        Log("Restart WSL resume attempt exit=" + result.ExitCode + Environment.NewLine + result.Output);
+                    }
+                    while (DateTime.UtcNow < deadline);
+
+                    Log("Restart WSL recovery exit=" + result.ExitCode + Environment.NewLine + result.Output);
+                    SetReadyAfterAction(result.ExitCode == 0, "wsl restart failed");
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void RunGetHermesFull()
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    ClearManualStop();
+                    SetStatus("get hermes full running");
+                    string restoreScript = Path.Combine(Root, "restore-hermes-wsl2.ps1");
+                    string getCommand = "Set-Location -LiteralPath " + PsSingleQuote(Root) + "; ws 'as'";
+                    string getArgs = "-NoLogo -ExecutionPolicy Bypass -Command " + Quote(getCommand);
+                    var getResult = RunHidden(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe"), getArgs, 1800000);
+                    Log("Get Hermes FULL gethermes exit=" + getResult.ExitCode + Environment.NewLine + getResult.Output);
+                    if (getResult.ExitCode != 0)
+                    {
+                        SetStatus("get hermes full failed");
+                        return;
+                    }
+
+                    SetStatus("get hermes full restoring");
+                    string restoreArgs = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File " + Quote(restoreScript);
+                    var restoreResult = RunHidden(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe"), restoreArgs, 1800000);
+                    Log("Get Hermes FULL restore exit=" + restoreResult.ExitCode + Environment.NewLine + restoreResult.Output);
+                    SetReadyAfterAction(restoreResult.ExitCode == 0, "get hermes full restore failed");
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void RunPowerShellScript(string scriptName, string label)
+        {
+            RunPowerShellScript(scriptName, label, "");
+        }
+
+        private void RunPowerShellScript(string scriptName, string label, string extraArgs)
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    SetStatus(label + " running");
+                    string script = Path.Combine(Root, scriptName);
+                    string args = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File " + Quote(script);
+                    if (!string.IsNullOrEmpty(extraArgs))
+                    {
+                        args += " " + extraArgs;
+                    }
+                    var result = RunHidden(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe"), args, 1800000);
+                    Log(label + " exit=" + result.ExitCode + Environment.NewLine + result.Output);
+                    SetReadyAfterAction(result.ExitCode == 0, label + " failed");
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void RunPowerShellFile(string script, string label, int timeoutMs)
+        {
+            RunPowerShellFile(script, label, timeoutMs, "");
+        }
+
+        private void RunPowerShellFile(string script, string label, int timeoutMs, string extraArgs)
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    SetStatus(label + " running");
+                    string args = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File " + Quote(script);
+                    if (!string.IsNullOrEmpty(extraArgs))
+                    {
+                        args += " " + extraArgs;
+                    }
+                    var result = RunHidden(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe"), args, timeoutMs);
+                    Log(label + " exit=" + result.ExitCode + Environment.NewLine + result.Output);
+                    SetReadyAfterAction(result.ExitCode == 0, label + " failed");
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void RunPowerShellCommand(string commandName, string label, string command, int timeoutMs)
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    SetStatus(label + " running");
+                    string args = "-NoLogo -ExecutionPolicy Bypass -Command " + Quote(command);
+                    var result = RunHidden(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe"), args, timeoutMs);
+                    Log(commandName + " exit=" + result.ExitCode + Environment.NewLine + result.Output);
+                    SetReadyAfterAction(result.ExitCode == 0, label + " failed");
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void RunStatus()
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    var health = CheckGatewayHealth();
+                    SetStatus(health.Healthy ? (health.Working ? "working" : "healthy") : (IsRecoverableHealthFailure(health) ? "recovering" : "not healthy"));
+                    Log("Manual status healthy=" + health.Healthy + " working=" + health.Working);
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void SetReadyAfterAction(bool actionSucceeded, string failureStatus)
+        {
+            if (!actionSucceeded)
+            {
+                SetStatus(failureStatus);
+                return;
+            }
+
+            if (IsManualStopRequested())
+            {
+                SetStatus("manual stop");
+                return;
+            }
+
+            var health = WaitForGatewayReady(GatewayReadyWaitMs, GatewayReadyPollMs);
+            if (health.Healthy)
+            {
+                SetStatus(health.Working ? "working" : "healthy");
+            }
+            else if (IsGatewayProcessRunning())
+            {
+                Log("Post-action readiness not fully green yet; exact gateway process exists, keeping tray green/working instead of sticky not-ready. " + FirstReadyFailure(health.Output));
+                SetStatus("working");
+            }
+            else
+            {
+                SetStatus(failureStatus);
+            }
+        }
+
+        private GatewayHealthResult WaitForGatewayReady(int timeoutMs, int pollMs)
+        {
+            DateTime deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            GatewayHealthResult last = null;
+            do
+            {
+                last = CheckGatewayHealth();
+                if (last.Healthy)
+                {
+                    return last;
+                }
+                Log("Waiting for ready; keeping current tray color instead of setting sticky yellow waiting state.");
+                Thread.Sleep(pollMs);
+            }
+            while (DateTime.UtcNow < deadline);
+
+            return last ?? new GatewayHealthResult
+            {
+                ExitCode = 1,
+                Output = "No health result returned before timeout.",
+                Healthy = false,
+                Working = false
+            };
+        }
+
+        private bool IsManualStopRequested()
+        {
+            return File.Exists(ManualStopFile);
+        }
+
+        private void SetManualStop()
+        {
+            try
+            {
+                File.WriteAllText(ManualStopFile, DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssK") + " manual stop requested" + Environment.NewLine, Encoding.UTF8);
+            }
+            catch (Exception ex)
+            {
+                Log("Manual stop marker write failed: " + ex.Message);
+            }
+        }
+
+        private void ClearManualStop()
+        {
+            try
+            {
+                if (File.Exists(ManualStopFile))
+                {
+                    File.Delete(ManualStopFile);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("Manual stop marker clear failed: " + ex.Message);
+            }
+        }
+
+        private bool IsGatewayHealthy()
+        {
+            return CheckGatewayHealth().Healthy;
+        }
+
+        private GatewayHealthResult CheckGatewayHealth()
+        {
+            var result = RunHidden("wsl.exe", "-d " + Distro + " -u root -- bash " + Quote(HealthWslPath), 60000);
+            Log("Status exit=" + result.ExitCode + Environment.NewLine + result.Output);
+            bool readyOk = result.Output.IndexOf("READY_OK=1", StringComparison.Ordinal) >= 0;
+            bool noReadyFail = result.Output.IndexOf("READY_FAIL=", StringComparison.Ordinal) < 0;
+            bool isolated = result.Output.IndexOf("READY_FLEET_ISOLATION_OK=1", StringComparison.Ordinal) >= 0;
+            bool enoughHomes = CountMarker(result.Output, "READY_HOME_OK=") >= MinimumTelegramHomes;
+            return new GatewayHealthResult
+            {
+                ExitCode = result.ExitCode,
+                Output = result.Output,
+                Working = result.Output.IndexOf("READY_WORKING=", StringComparison.Ordinal) >= 0,
+                Healthy = result.ExitCode == 0 && readyOk && noReadyFail && isolated && enoughHomes
+            };
+        }
+
+        private static int CountMarker(string text, string marker)
+        {
+            if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(marker))
+            {
+                return 0;
+            }
+            int count = 0;
+            int index = 0;
+            while ((index = text.IndexOf(marker, index, StringComparison.Ordinal)) >= 0)
+            {
+                count++;
+                index += marker.Length;
+            }
+            return count;
+        }
+
+        private bool IsGatewayProcessRunning()
+        {
+            string command = "bash " + Quote(GatewayProcessCheckWslPath);
+            var result = RunHidden("wsl.exe", "-d " + Distro + " -u root -- bash -lc " + Quote(command), 30000);
+            Log("Process check exit=" + result.ExitCode + Environment.NewLine + result.Output);
+            return result.ExitCode == 0;
+        }
+
+        private void TogglePause()
+        {
+            ClearManualStop();
+            SetStatus("health monitor on");
+            Log("Watchdog health monitor is on; automatic safe reconnect/self-heal is enabled");
+        }
+
+        private void PauseGateway()
+        {
+            if (!TryEnterWork())
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    SetManualStop();
+                    SetStatus("pausing gateway");
+                    string command = "/usr/local/sbin/hermes-create-manual-gateway-intent manual-stop; HOME_DIR=/home/ubuntu; for h in \"$HOME_DIR/.hermes\" \"$HOME_DIR\"/.hermes-*; do [ -d \"$h\" ] || continue; [ -f \"$h/config.yaml\" ] || continue; [ -f \"$h/.env\" ] || continue; grep -q '^TELEGRAM_BOT_TOKEN=' \"$h/.env\" || continue; b=$(basename \"$h\"); if [ \"$b\" = .hermes ]; then s=hermes-gateway; else s=hermes-${b#.hermes-}; fi; sudo -H -u ubuntu env HERMES_ALLOW_GATEWAY_STOP=manual-intent tmux kill-session -t \"=$s\" 2>/dev/null || true; done; exit 0";
+                    var result = RunHidden("wsl.exe", "-d " + Distro + " -u root -- bash -lc " + Quote(command), 60000);
+                    SetStatus(result.ExitCode == 0 ? "manual stop" : "pause failed");
+                    Log("Pause gateway exit=" + result.ExitCode + Environment.NewLine + result.Output);
+                }
+                finally
+                {
+                    LeaveWork();
+                }
+            });
+        }
+
+        private void ResumeGateway()
+        {
+            ClearManualStop();
+            RunReconnect("manual resume");
+        }
+
+        private void CopyLastStatus()
+        {
+            try
+            {
+                Clipboard.SetText(lastStatus);
+                Log("Copied last status to clipboard");
+            }
+            catch (Exception ex)
+            {
+                Log("Clipboard failed: " + ex.Message);
+            }
+        }
+
+        private void OpenDashboard()
+        {
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    SetStatus("dashboard opening");
+                    Dashboard.Open(lastStatus);
+                    SetReadyAfterAction(true, "dashboard failed");
+                }
+                catch (Exception ex)
+                {
+                    Log("Dashboard failed: " + ex);
+                    SetStatus("dashboard failed");
+                }
+            });
+        }
+
+        private void OpenMissionControl()
+        {
+            if (missionControl != null && !missionControl.IsDisposed)
+            {
+                missionControl.BeginInvoke((MethodInvoker)delegate
+                {
+                    missionControl.WindowState = FormWindowState.Normal;
+                    missionControl.Activate();
+                });
+                return;
+            }
+
+            missionControl = BuildMissionControlForm();
+            missionControl.Show();
+        }
+
+        private Form BuildMissionControlForm()
+        {
+            var form = new Form();
+            form.Text = "Hermes Mission Control";
+            form.StartPosition = FormStartPosition.CenterScreen;
+            form.MinimumSize = new Size(980, 700);
+            form.Size = new Size(1120, 760);
+            form.BackColor = Color.FromArgb(6, 17, 13);
+            form.ForeColor = Color.FromArgb(237, 253, 244);
+            form.Font = new Font("Segoe UI", 9.5f);
+
+            var shell = new TableLayoutPanel();
+            shell.Dock = DockStyle.Fill;
+            shell.Padding = new Padding(22);
+            shell.RowCount = 4;
+            shell.ColumnCount = 1;
+            shell.RowStyles.Add(new RowStyle(SizeType.Absolute, 92));
+            shell.RowStyles.Add(new RowStyle(SizeType.Absolute, 82));
+            shell.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            shell.RowStyles.Add(new RowStyle(SizeType.Absolute, 150));
+            shell.BackColor = form.BackColor;
+            form.Controls.Add(shell);
+
+            var title = new Label();
+            title.Dock = DockStyle.Fill;
+            title.Text = "Hermes Mission Control";
+            title.Font = new Font("Segoe UI Semibold", 28f, FontStyle.Bold);
+            title.ForeColor = Color.FromArgb(237, 253, 244);
+            title.TextAlign = ContentAlignment.MiddleLeft;
+            shell.Controls.Add(title, 0, 0);
+
+            var statusPanel = new Panel();
+            statusPanel.Dock = DockStyle.Fill;
+            statusPanel.Padding = new Padding(18, 12, 18, 12);
+            statusPanel.BackColor = Color.FromArgb(13, 31, 23);
+            shell.Controls.Add(statusPanel, 0, 1);
+
+            missionStatusLabel = new Label();
+            missionStatusLabel.Dock = DockStyle.Fill;
+            missionStatusLabel.Text = "Status: " + lastStatus;
+            missionStatusLabel.Font = new Font("Segoe UI Semibold", 13f, FontStyle.Bold);
+            missionStatusLabel.ForeColor = Color.FromArgb(41, 242, 143);
+            missionStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
+            statusPanel.Controls.Add(missionStatusLabel);
+
+            var grid = new TableLayoutPanel();
+            grid.Dock = DockStyle.Fill;
+            grid.BackColor = form.BackColor;
+            grid.ColumnCount = 4;
+            grid.RowCount = 5;
+            for (int i = 0; i < 4; i++)
+            {
+                grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            }
+            for (int i = 0; i < 5; i++)
+            {
+                grid.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
+            }
+            shell.Controls.Add(grid, 0, 2);
+
+            AddMissionButton(grid, "Status Check", "Read live health and update the tray icon.", delegate { RunStatus(); });
+            AddMissionButton(grid, "Reconnect Now", "Resume the gateway without deleting data.", delegate { RunReconnect("mission control reconnect"); });
+            AddMissionButton(grid, "Resume Gateway", "Clear manual stop and reconnect.", delegate { ResumeGateway(); });
+            AddMissionButton(grid, "Latest Dashboard", "Open the current Hermes web dashboard with the embedded TUI Chat tab enabled.", delegate { RunHermesDashboard(); });
+            AddMissionButton(grid, "Global Dashboard", "Create a public tunnel URL to the same latest dashboard surface.", delegate { RunGlobalHermesDashboard(); });
+            AddMissionButton(grid, "Browser Control", "Open the latest Hermes browser-control docs and print the live control surface.", delegate { RunBrowserControl(); });
+            AddMissionButton(grid, "Backup Now", "Run the same backher function used in PowerShell.", delegate { RunBackher(); });
+            AddMissionButton(grid, "Validate Restore", "Validate latest backup without changing files.", delegate { RunPowerShellScript("restore-hermes-wsl2.ps1", "restore validation", "-ValidateOnly"); });
+            AddMissionButton(grid, "Clean Backup", "Purge old backups and create a fresh one.", delegate { RunCleanBackup(); });
+            AddMissionButton(grid, "Restore Now", "Restore from latest Hermes backup.", delegate { RunPowerShellScript("restore-hermes-wsl2.ps1", "restore"); });
+            AddMissionButton(grid, "Get Hermes", "Run the configured gethermes flow.", delegate { RunGetHermes(); });
+            AddMissionButton(grid, "Get Hermes FULL", "Get Hermes, then restore Hermes data.", delegate { RunGetHermesFull(); });
+            AddMissionButton(grid, "Update Hermes", "Run Hermes update and resume.", delegate { RunUpdate(); });
+            AddMissionButton(grid, "Restart Gateway", "Restart gateway intentionally.", delegate { RunRestart(); });
+            AddMissionButton(grid, "Restart WSL", "Shutdown WSL and relaunch Ubuntu in the background.", delegate { RunRestartWsl(); });
+            AddMissionButton(grid, "Manual Stop", "Stop gateway and mark the tray purple.", delegate { PauseGateway(); });
+            AddMissionButton(grid, "Health Monitor On", "Keep status checks active without automatic reconnects.", delegate { TogglePause(); });
+            AddMissionButton(grid, "Open Logs Folder", "Open AutoBackRes logs and artifacts.", delegate { OpenLogsFolder(); });
+            AddMissionButton(grid, "Copy Last Status", "Copy the latest tray status text.", delegate { CopyLastStatus(); });
+
+            var note = new Label();
+            note.Dock = DockStyle.Fill;
+            note.Text = "Mission control buttons call the same hidden tray actions as the system tray menu. Dashboard actions use the latest Hermes web dashboard/TUI launcher, Browser Control opens the current Hermes browser-control docs and live tool surface, and green means the health script returned READY_OK=1, READY_FLEET_ISOLATION_OK=1, no READY_FAIL marker, and READY_HOME_OK for every dynamically discovered Telegram bot home. Backup/restore actions use the AutoBackRes scripts from this folder, and validation does not mutate files.";
+            note.ForeColor = Color.FromArgb(156, 199, 176);
+            note.Font = new Font("Segoe UI", 11f);
+            note.TextAlign = ContentAlignment.MiddleLeft;
+            note.Padding = new Padding(4, 18, 4, 4);
+            shell.Controls.Add(note, 0, 3);
+
+            form.FormClosed += delegate
+            {
+                missionControl = null;
+                missionStatusLabel = null;
+            };
+
+            return form;
+        }
+
+        private void AddMissionButton(TableLayoutPanel grid, string title, string description, Action action)
+        {
+            var panel = new Panel();
+            panel.Dock = DockStyle.Fill;
+            panel.Margin = new Padding(8);
+            panel.Padding = new Padding(12);
+            panel.BackColor = Color.FromArgb(13, 27, 21);
+
+            var button = new Button();
+            button.Dock = DockStyle.Top;
+            button.Height = 42;
+            button.Text = title;
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderColor = Color.FromArgb(36, 70, 56);
+            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(24, 55, 40);
+            button.FlatAppearance.MouseDownBackColor = Color.FromArgb(35, 80, 57);
+            button.BackColor = Color.FromArgb(18, 39, 30);
+            button.ForeColor = Color.FromArgb(237, 253, 244);
+            button.Font = new Font("Segoe UI Semibold", 10.5f, FontStyle.Bold);
+            button.Click += delegate { action(); };
+
+            var label = new Label();
+            label.Dock = DockStyle.Fill;
+            label.Text = description;
+            label.ForeColor = Color.FromArgb(156, 199, 176);
+            label.Font = new Font("Segoe UI", 9f);
+            label.Padding = new Padding(0, 10, 0, 0);
+
+            panel.Controls.Add(label);
+            panel.Controls.Add(button);
+            grid.Controls.Add(panel);
+        }
+
+        public int MissionControlButtonCountForTest()
+        {
+            using (var form = BuildMissionControlForm())
+            {
+                return CountButtons(form);
+            }
+        }
+
+        public string MenuSmokeReportForTest()
+        {
+            using (var menu = BuildMenu())
+            {
+                var report = new StringBuilder();
+                int actionCount = 0;
+                foreach (ToolStripItem item in menu.Items)
+                {
+                    if (item is ToolStripSeparator)
+                    {
+                        continue;
+                    }
+                    actionCount++;
+                    report.AppendLine("MENU_ITEM=" + item.Text);
+                }
+                report.Insert(0, "MENU_ACTIONS=" + actionCount + Environment.NewLine);
+                return report.ToString();
+            }
+        }
+
+        public void DisposeForSmokeTest()
+        {
+            watchdog.Stop();
+            tray.Visible = false;
+            tray.Dispose();
+            greenIcon.Dispose();
+            yellowIcon.Dispose();
+            redIcon.Dispose();
+            purpleIcon.Dispose();
+        }
+
+        private static int CountButtons(Control control)
+        {
+            int count = control is Button ? 1 : 0;
+            foreach (Control child in control.Controls)
+            {
+                count += CountButtons(child);
+            }
+            return count;
+        }
+
+        private void OpenLogsFolder()
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = Root,
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                });
+            }
+            catch (Exception ex)
+            {
+                Log("Open logs folder failed: " + ex.Message);
+            }
+        }
+
+        private CommandResult RunHidden(string fileName, string arguments, int timeoutMs)
+        {
+            var output = new StringBuilder();
+            try
+            {
+                var psi = new ProcessStartInfo();
+                psi.FileName = fileName;
+                psi.Arguments = arguments;
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                psi.WindowStyle = ProcessWindowStyle.Hidden;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+
+                using (var process = new Process())
+                {
+                    process.StartInfo = psi;
+                    process.OutputDataReceived += delegate(object sender, DataReceivedEventArgs e) { if (e.Data != null) output.AppendLine(e.Data); };
+                    process.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs e) { if (e.Data != null) output.AppendLine(e.Data); };
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    if (!process.WaitForExit(timeoutMs))
+                    {
+                        try { process.Kill(); } catch { }
+                        output.AppendLine("Timed out after " + timeoutMs + "ms");
+                        return new CommandResult(124, output.ToString());
+                    }
+                    return new CommandResult(process.ExitCode, output.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                output.AppendLine(ex.ToString());
+                return new CommandResult(1, output.ToString());
+            }
+        }
+
+        private CommandResult StartHiddenNoWait(string fileName, string arguments)
+        {
+            var output = new StringBuilder();
+            try
+            {
+                var psi = new ProcessStartInfo();
+                psi.FileName = fileName;
+                psi.Arguments = arguments;
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                psi.WindowStyle = ProcessWindowStyle.Hidden;
+
+                var process = Process.Start(psi);
+                if (process == null)
+                {
+                    return new CommandResult(1, "Process.Start returned null");
+                }
+
+                output.AppendLine("Started PID=" + process.Id);
+                process.Dispose();
+                return new CommandResult(0, output.ToString());
+            }
+            catch (Exception ex)
+            {
+                output.AppendLine(ex.ToString());
+                return new CommandResult(1, output.ToString());
+            }
+        }
+
+        private void SetStatus(string status)
+        {
+            lastStatus = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " " + status;
+            string iconColor = StatusIconColorName(status);
+            try
+            {
+                tray.Icon = StatusIconFor(status);
+                tray.Text = ("Hermes WSL2: " + status).Length > 63
+                    ? ("Hermes WSL2: " + status).Substring(0, 63)
+                    : "Hermes WSL2: " + status;
+            }
+            catch
+            {
+            }
+            Log("STATUS " + status + " ICON=" + iconColor);
+            UpdateMissionControlStatus(lastStatus, iconColor);
+        }
+
+        private void UpdateMissionControlStatus(string text, string iconColor)
+        {
+            if (missionStatusLabel == null || missionStatusLabel.IsDisposed)
+            {
+                return;
+            }
+            try
+            {
+                missionStatusLabel.BeginInvoke((MethodInvoker)delegate
+                {
+                    missionStatusLabel.Text = "Status: " + text;
+                    missionStatusLabel.ForeColor = StatusTextColor(iconColor);
+                });
+            }
+            catch
+            {
+            }
+        }
+
+        private Color StatusTextColor(string iconColor)
+        {
+            switch ((iconColor ?? string.Empty).ToLowerInvariant())
+            {
+                case "green": return Color.FromArgb(41, 242, 143);
+                case "yellow": return Color.FromArgb(255, 211, 90);
+                case "red": return Color.FromArgb(255, 91, 110);
+                case "purple": return Color.FromArgb(183, 136, 255);
+                default: return Color.FromArgb(237, 253, 244);
+            }
+        }
+
+        private Icon StatusIconFor(string status)
+        {
+            string s = (status ?? string.Empty).ToLowerInvariant();
+            if (s.Contains("paused") || s.Contains("stopped") || s.Contains("manual stop"))
+            {
+                return purpleIcon;
+            }
+            if (s.Contains("failed") || s.Contains("error") || s.Contains("broken") || s.Contains("not healthy") || s.Contains("not ready"))
+            {
+                return redIcon;
+            }
+            if (s == "healthy" || s == "working")
+            {
+                return greenIcon;
+            }
+            return yellowIcon;
+        }
+
+        private string StatusIconColorName(string status)
+        {
+            string s = (status ?? string.Empty).ToLowerInvariant();
+            if (s.Contains("paused") || s.Contains("stopped") || s.Contains("manual stop"))
+            {
+                return "purple";
+            }
+            if (s.Contains("failed") || s.Contains("error") || s.Contains("broken") || s.Contains("not healthy") || s.Contains("not ready"))
+            {
+                return "red";
+            }
+            if (s == "healthy" || s == "working")
+            {
+                return "green";
+            }
+            return "yellow";
+        }
+
+        private static Icon CreateStatusIcon(Color color)
+        {
+            using (var bitmap = new Bitmap(16, 16))
+            {
+                using (var g = Graphics.FromImage(bitmap))
+                {
+                    g.Clear(Color.Transparent);
+                    using (var border = new SolidBrush(Color.FromArgb(45, 45, 45)))
+                    using (var fill = new SolidBrush(color))
+                    using (var shine = new SolidBrush(Color.FromArgb(120, Color.White)))
+                    {
+                        g.FillEllipse(border, 1, 1, 14, 14);
+                        g.FillEllipse(fill, 3, 3, 10, 10);
+                        g.FillEllipse(shine, 5, 4, 3, 3);
+                    }
+                }
+                return (Icon)Icon.FromHandle(bitmap.GetHicon()).Clone();
+            }
+        }
+
+        private void Log(string message)
+        {
+            try
+            {
+                File.AppendAllText(logFile, "[" + DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssK") + "] " + message + Environment.NewLine, Encoding.UTF8);
+            }
+            catch
+            {
+            }
+        }
+
+        private static string Quote(string value)
+        {
+            if (value == null)
+            {
+                return "\"\"";
+            }
+            return "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        }
+
+        private static string PsSingleQuote(string value)
+        {
+            if (value == null)
+            {
+                return "''";
+            }
+            return "'" + value.Replace("'", "''") + "'";
+        }
+
+        private static string ToWslPath(string windowsPath)
+        {
+            string fullPath = Path.GetFullPath(windowsPath);
+            string root = Path.GetPathRoot(fullPath);
+            if (string.IsNullOrEmpty(root) || root.Length < 2 || root[1] != ':')
+            {
+                throw new InvalidOperationException("Cannot convert path to WSL path: " + windowsPath);
+            }
+
+            char drive = char.ToLowerInvariant(root[0]);
+            string relative = fullPath.Substring(root.Length).Replace('\\', '/');
+            return "/mnt/" + drive + "/" + relative;
+        }
+
+        protected override void ExitThreadCore()
+        {
+            watchdog.Stop();
+            tray.Visible = false;
+            tray.Dispose();
+            greenIcon.Dispose();
+            yellowIcon.Dispose();
+            redIcon.Dispose();
+            purpleIcon.Dispose();
+            Log("Hermes tray exited");
+            base.ExitThreadCore();
+        }
+
+        private sealed class CommandResult
+        {
+            public readonly int ExitCode;
+            public readonly string Output;
+
+            public CommandResult(int exitCode, string output)
+            {
+                ExitCode = exitCode;
+                Output = output;
+            }
+        }
+    }
+
+    internal static class Dashboard
+    {
+        private static readonly string Root = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        private static readonly string DashboardPath = Path.Combine(Root, "HermesDashboard.html");
+        private static readonly string HealthWslPath = ToWslPath(Path.Combine(Root, "hermes-tray-health.sh"));
+        private const string Distro = "ubuntu";
+
+        public static void Open(string lastStatus)
+        {
+            string health = RunHidden("wsl.exe", "-d " + Distro + " -u root -- bash " + Quote(HealthWslPath), 60000).Output;
+            string process = RunHidden("wsl.exe", "-d " + Distro + " -u root -- bash -lc " + Quote("pgrep -af 'hermes gateway run' || true"), 30000).Output;
+            string gatewayLog = RunHidden("wsl.exe", "-d " + Distro + " -u root -- bash -lc " + Quote("tail -n 36 /home/ubuntu/.hermes/logs/gateway.log 2>/dev/null || true"), 30000).Output;
+            string latestBackup = LatestBackupSummary();
+            string trayTail = TailFile(Path.Combine(Root, "HermesTray.log"), 36);
+            bool ok = health.IndexOf("READY_OK=1", StringComparison.Ordinal) >= 0 && health.IndexOf("READY_FAIL=", StringComparison.Ordinal) < 0;
+            bool working = health.IndexOf("READY_WORKING=", StringComparison.Ordinal) >= 0;
+            string statusWord = ok ? (working ? "Working" : "Ready") : "Needs attention";
+            string statusClass = ok ? (working ? "yellow" : "ok") : "bad";
+            string generated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+            var html = new StringBuilder();
+            html.AppendLine("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">");
+            html.AppendLine("<meta http-equiv=\"refresh\" content=\"20\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
+            html.AppendLine("<title>Hermes WSL2 Dashboard</title>");
+            html.AppendLine("<style>");
+            html.AppendLine(":root{--bg:#07110d;--panel:#0d1b15;--panel2:#12271e;--line:#244638;--text:#edfdf4;--muted:#9cc7b0;--green:#29f28f;--yellow:#ffd35a;--red:#ff5b6e;--purple:#b788ff;--blue:#65d7ff;}");
+            html.AppendLine("*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0%,#163f2d 0,#07110d 38%,#050807 100%);color:var(--text);font-family:'Segoe UI Variable','Segoe UI',Tahoma,sans-serif;}");
+            html.AppendLine(".shell{max-width:1320px;margin:0 auto;padding:34px}.top{display:flex;justify-content:space-between;gap:22px;align-items:flex-start;margin-bottom:22px}.title h1{font-size:38px;margin:0 0 8px;letter-spacing:-.04em}.title p{margin:0;color:var(--muted)}.status{min-width:300px;border:1px solid var(--line);background:linear-gradient(145deg,rgba(18,39,30,.92),rgba(8,18,14,.92));border-radius:24px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.35)}");
+            html.AppendLine(".lamp{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:800}.dot{width:18px;height:18px;border-radius:50%;box-shadow:0 0 22px currentColor}.ok{color:var(--green)}.bad{color:var(--red)}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.card{grid-column:span 4;border:1px solid var(--line);background:rgba(13,27,21,.88);border-radius:22px;padding:18px;min-height:150px}.wide{grid-column:span 8}.full{grid-column:1/-1}.metric{font-size:30px;font-weight:850;letter-spacing:-.03em;margin:8px 0}.label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.14em}.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:8px 11px;background:#0a1712;color:var(--muted);margin:4px 6px 4px 0}.mono{white-space:pre-wrap;word-break:break-word;font:12px/1.55 Consolas,'Cascadia Mono',monospace;color:#c8f5d8;background:#06100c;border-radius:16px;border:1px solid #193426;padding:14px;max-height:360px;overflow:auto}.note{color:var(--muted);font-size:13px;line-height:1.55}.rail{display:flex;gap:10px;flex-wrap:wrap}.blue{color:var(--blue)}.yellow{color:var(--yellow)}@media(max-width:900px){.top{display:block}.status{margin-top:18px}.card,.wide{grid-column:1/-1}.shell{padding:20px}}");
+            html.AppendLine("</style></head><body><main class=\"shell\">");
+            html.AppendLine("<section class=\"top\"><div class=\"title\"><h1>Hermes WSL2 Operations Dashboard</h1><p>Generated by the tray app. Auto-refreshes every 20 seconds when the tray rewrites this file.</p></div>");
+            html.AppendLine("<aside class=\"status\"><div class=\"lamp " + statusClass + "\"><span class=\"dot\"></span><span>" + Html(statusWord) + "</span></div><p class=\"note\">Generated " + Html(generated) + "</p></aside></section>");
+            html.AppendLine("<section class=\"grid\">");
+            AddCard(html, "Gateway Signal", statusWord, "Current tray health result. Green is allowed while Hermes is actively working.", new[] { ok ? "READY_OK" : "CHECK", working ? "WORKING" : "IDLE/READY" });
+            AddCard(html, "Last Tray Status", lastStatus, "Most recent status stored by HermesTray.exe.", new[] { "Tray PID protected", "No data mutation" });
+            AddCard(html, "Latest Backup", latestBackup, "Newest AutoBackRes backup folder. Use backher/resher for durable state.", new[] { "Private backup", "Restore validated separately" });
+            AddPre(html, "Health Output", health, "full");
+            AddPre(html, "Gateway Process", process, "card");
+            AddPre(html, "Gateway Log Tail", gatewayLog, "wide");
+            AddPre(html, "Tray Log Tail", trayTail, "full");
+            html.AppendLine("<article class=\"card full\"><div class=\"label\">Dashboard design notes</div><p class=\"note\">Built as an operational dashboard: immediate health at the top, then narrow-down panels for process, backup, and logs. This follows current dashboard/status-page guidance: show the most important status first, keep operational details scannable, and make investigation paths obvious.</p></article>");
+            html.AppendLine("</section></main></body></html>");
+
+            File.WriteAllText(DashboardPath, html.ToString(), Encoding.UTF8);
+            Process.Start(new ProcessStartInfo { FileName = DashboardPath, UseShellExecute = true, WindowStyle = ProcessWindowStyle.Hidden });
+        }
+
+        private static void AddCard(StringBuilder html, string title, string metric, string note, string[] pills)
+        {
+            html.AppendLine("<article class=\"card\"><div class=\"label\">" + Html(title) + "</div><div class=\"metric\">" + Html(metric) + "</div><p class=\"note\">" + Html(note) + "</p><div class=\"rail\">");
+            for (int i = 0; i < pills.Length; i++)
+            {
+                html.AppendLine("<span class=\"pill\">" + Html(pills[i]) + "</span>");
+            }
+            html.AppendLine("</div></article>");
+        }
+
+        private static void AddPre(StringBuilder html, string title, string value, string cls)
+        {
+            html.AppendLine("<article class=\"" + cls + "\"><div class=\"label\">" + Html(title) + "</div><div class=\"mono\">" + Html(value) + "</div></article>");
+        }
+
+        private static string LatestBackupSummary()
+        {
+            string backupRoot = Path.Combine(Root, "backups");
+            if (!Directory.Exists(backupRoot))
+            {
+                return "No backup folder";
+            }
+            var dirs = Directory.GetDirectories(backupRoot);
+            Array.Sort(dirs, StringComparer.OrdinalIgnoreCase);
+            if (dirs.Length == 0)
+            {
+                return "No backups yet";
+            }
+            string latest = dirs[dirs.Length - 1];
+            string archive = Path.Combine(latest, "hermes-wsl-data.tar.gz");
+            long mb = File.Exists(archive) ? new FileInfo(archive).Length / 1024 / 1024 : 0;
+            return Path.GetFileName(latest) + (mb > 0 ? " / " + mb + " MB" : "");
+        }
+
+        private static string TailFile(string path, int count)
+        {
+            if (!File.Exists(path))
+            {
+                return "Missing: " + path;
+            }
+            string[] lines = File.ReadAllLines(path, Encoding.UTF8);
+            int start = Math.Max(0, lines.Length - count);
+            var sb = new StringBuilder();
+            for (int i = start; i < lines.Length; i++)
+            {
+                sb.AppendLine(lines[i]);
+            }
+            return sb.ToString();
+        }
+
+        private static CommandResult RunHidden(string fileName, string arguments, int timeoutMs)
+        {
+            var output = new StringBuilder();
+            try
+            {
+                var psi = new ProcessStartInfo();
+                psi.FileName = fileName;
+                psi.Arguments = arguments;
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                psi.WindowStyle = ProcessWindowStyle.Hidden;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                using (var process = new Process())
+                {
+                    process.StartInfo = psi;
+                    process.OutputDataReceived += delegate(object sender, DataReceivedEventArgs e) { if (e.Data != null) output.AppendLine(e.Data); };
+                    process.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs e) { if (e.Data != null) output.AppendLine(e.Data); };
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    if (!process.WaitForExit(timeoutMs))
+                    {
+                        try { process.Kill(); } catch { }
+                        output.AppendLine("Timed out after " + timeoutMs + "ms");
+                        return new CommandResult(124, output.ToString());
+                    }
+                    return new CommandResult(process.ExitCode, output.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                output.AppendLine(ex.ToString());
+                return new CommandResult(1, output.ToString());
+            }
+        }
+
+        private static string Html(string value)
+        {
+            if (value == null) { return ""; }
+            return value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
+        }
+
+        private static string Quote(string value)
+        {
+            if (value == null) { return "\"\""; }
+            return "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        }
+
+        private static string ToWslPath(string windowsPath)
+        {
+            string fullPath = Path.GetFullPath(windowsPath);
+            string root = Path.GetPathRoot(fullPath);
+            char drive = char.ToLowerInvariant(root[0]);
+            string relative = fullPath.Substring(root.Length).Replace('\\', '/');
+            return "/mnt/" + drive + "/" + relative;
+        }
+
+        private sealed class CommandResult
+        {
+            public readonly int ExitCode;
+            public readonly string Output;
+
+            public CommandResult(int exitCode, string output)
+            {
+                ExitCode = exitCode;
+                Output = output;
+            }
+        }
+    }
+}

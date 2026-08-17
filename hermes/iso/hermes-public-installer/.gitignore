@@ -1,0 +1,17 @@
+# Build/output artifacts
+/release/
+/tmp/
+/*.iso
+*.tar
+*.tar.gz
+*.tgz
+*.enc
+*.part*
+
+# Never commit local recovery material
+PRIVATE_RECOVERY_KEY_DO_NOT_UPLOAD.txt
+*.key
+.env
+.env.*
+secrets/
+credentials/

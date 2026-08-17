@@ -1,0 +1,64 @@
+{
+  "actorSpecification": 1,
+  "fields": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string"
+      },
+      "httpStatus": {
+        "type": "integer"
+      },
+      "title": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "canonicalUrl": {
+        "type": "string"
+      },
+      "wordCount": {
+        "type": "integer"
+      },
+      "linkCount": {
+        "type": "integer"
+      },
+      "emails": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "technologies": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "links": {
+        "type": "array"
+      },
+      "error": {
+        "type": "string"
+      },
+      "fetchedAt": {
+        "type": "string"
+      }
+    }
+  },
+  "views": {
+    "overview": {
+      "title": "Overview",
+      "transformation": {
+        "fields": ["url", "status", "httpStatus", "title", "description", "wordCount", "linkCount", "technologies", "error", "fetchedAt"]
+      },
+      "display": {
+        "component": "table"
+      }
+    }
+  }
+}

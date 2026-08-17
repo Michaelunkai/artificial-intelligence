@@ -1,0 +1,67 @@
+plugins {
+    id "com.android.application"
+}
+
+def daymarkSigningStore = System.getenv("DAYMARK_SIGNING_STORE")
+def daymarkSigningStorePassword = System.getenv("DAYMARK_SIGNING_STORE_PASSWORD")
+def daymarkSigningKeyAlias = System.getenv("DAYMARK_SIGNING_KEY_ALIAS")
+def daymarkSigningKeyPassword = System.getenv("DAYMARK_SIGNING_KEY_PASSWORD")
+def daymarkGitCommit = System.getenv("DAYMARK_GIT_COMMIT")
+def hasDaymarkSigning = [
+        daymarkSigningStore,
+        daymarkSigningStorePassword,
+        daymarkSigningKeyAlias,
+        daymarkSigningKeyPassword
+].every { it != null && !it.isEmpty() }
+def isReleaseRequested = gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }
+
+if (isReleaseRequested && !hasDaymarkSigning) {
+    throw new GradleException(
+            "A Daymark release requires DAYMARK_SIGNING_STORE, " +
+            "DAYMARK_SIGNING_STORE_PASSWORD, DAYMARK_SIGNING_KEY_ALIAS, and " +
+            "DAYMARK_SIGNING_KEY_PASSWORD. Debug signing is not valid for updates."
+    )
+}
+if (isReleaseRequested && (daymarkGitCommit == null || !(daymarkGitCommit ==~ /[0-9a-f]{40}/))) {
+    throw new GradleException("A Daymark release requires DAYMARK_GIT_COMMIT with the exact 40-character Git commit.")
+}
+
+android {
+    namespace "com.michaelunkai.daymark"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.michaelunkai.daymark"
+        minSdk 23
+        targetSdk 34
+        versionCode 27
+        versionName "1.4.34"
+        manifestPlaceholders = [daymarkGitCommit: daymarkGitCommit ?: "unverified"]
+    }
+
+    if (hasDaymarkSigning) {
+        signingConfigs {
+            daymarkRelease {
+                storeFile file(daymarkSigningStore)
+                storePassword daymarkSigningStorePassword
+                keyAlias daymarkSigningKeyAlias
+                keyPassword daymarkSigningKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if (hasDaymarkSigning) {
+                signingConfig signingConfigs.daymarkRelease
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

@@ -1,0 +1,48 @@
+# Local secrets and auth material
+.env
+.env.*
+!.env.example
+**/telegram.env
+**/auth.json
+**/*secret*
+**/*secrets*
+**/*token*
+**/*credential*
+**/*credentials*
+
+# Runtime logs and transient process output
+*.log
+*.out
+*.err
+*.pid
+*.pid.txt
+AutoSetupHermes/logs/
+AutoBackRes/HermesTray.log
+AutoBackRes/*-run.*.log
+
+# Local backup/restore payloads. These can contain credentials and are huge.
+AutoBackRes/backups/
+AutoBackRes/pre-revert-current-scripts-*/
+AutoBackRes/pre-previous-version-restore-*/
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+
+# Local temporary files created by WSL wrapper runs
+AutoBackRes/wsl-*.exit
+AutoBackRes/wsl-*-wrapper.sh
+AutoBackRes/restore-*/
+
+# Local run markers from previous ad-hoc tests
+AutoBackRes/[0-9]*
+AutoSetupHermes/[0-9]*
+AutoSetupHermes/a.out
+
+# OS/editor noise
+Thumbs.db
+Desktop.ini
+.DS_Store
+.idea/
+.vscode/
